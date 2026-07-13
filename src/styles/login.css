@@ -1,0 +1,71 @@
+.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #1d191911;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  transition: 0.3s;
+}
+
+.googleBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,.12);
+}
+.googleBtn span {
+  font-weight: 600;
+  color: #111;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 20px 0;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: #d9d9d9;
+}
+
+.dividerText {
+  padding: 0 15px;
+  color: #888;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.signupContainer {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 15px;
+  color: #666;
+}
+
+.signupLink {
+  color: #5b4bff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.signupLink:hover {
+  text-decoration: underline;
+}
+input:focus {
+  border: 1px solid #5b4bff;
+  box-shadow: 0 0 5px rgba(91, 75, 255, 0.4);
+}
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
