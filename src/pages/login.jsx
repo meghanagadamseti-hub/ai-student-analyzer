@@ -127,7 +127,7 @@ function Login() {
           <div className="dividerLine"></div>
 
           <span className="dividerText">
-           ______________________OR___________________
+       ______________________OR_________
           </span>
 
           <div className="dividerLine"></div>
