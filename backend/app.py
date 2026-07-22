@@ -39,7 +39,7 @@ def home():
 # Upload Resume
 # ---------------------------------------
 @app.route("/upload", methods=["POST"])
-def upload_resume():http://127.0.0.1:5000
+def upload_resume():
 
     if "resume" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
