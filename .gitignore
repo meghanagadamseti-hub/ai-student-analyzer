@@ -14,3 +14,17 @@ dist/
 
 # Uploads (optional)
 uploads/
+# Python
+backend/venv/
+backend/__pycache__/
+*.pyc
+
+# React
+AI frontend/node_modules/
+AI frontend/dist/
+
+# Environment
+.env
+
+# Uploads
+backend/uploads/
