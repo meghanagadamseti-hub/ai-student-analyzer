@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
@@ -5,10 +7,15 @@ import ResumeUpload from "../components/ResumeUpload";
 import CompanySelection from "../components/CompanySelection";
 import ResumeAnalysis from "../components/ResumeAnalysis";
 import RequiredSkills from "../components/RequiredSkills";
-import { useState } from "react";
+
 function Resume() {
   const [resumeData, setResumeData] = useState(null);
- console.log("Resume Page State:", resumeData);
+
+  // Controls whether analysis is visible
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+
+  console.log("Resume Page State:", resumeData);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
@@ -16,7 +23,7 @@ function Resume() {
       <main className="ml-72 flex-1 p-8">
         <Navbar />
 
-        {/* Page Heading */}
+        {/* Heading */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800">
             Resume Management
@@ -27,17 +34,27 @@ function Resume() {
           </p>
         </div>
 
-        {/* Upload Resume + Company Selection */}
+        {/* Upload + Company */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <ResumeUpload setResumeData={setResumeData} />
-          <CompanySelection />
+          <ResumeUpload
+            setResumeData={setResumeData}
+            setAnalysisComplete={setAnalysisComplete}
+          />
+
+          <CompanySelection
+            resumeData={resumeData}
+            setResumeData={setResumeData}
+            setAnalysisComplete={setAnalysisComplete}
+          />
         </div>
 
-        {/* AI Resume Analysis + Required Skills */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          <ResumeAnalysis resumeData={resumeData} />
-           <RequiredSkills />
-        </div>
+        {/* Show analysis only after clicking Analyze */}
+        {analysisComplete && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            <ResumeAnalysis resumeData={resumeData} />
+            <RequiredSkills resumeData={resumeData} />
+          </div>
+        )}
       </main>
     </div>
   );

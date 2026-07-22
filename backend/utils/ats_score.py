@@ -1,147 +1,137 @@
-def calculate_resume_score(skills, resume_text):
+# utils/ats_score.py
 
-    score = 0
+import re
 
-    strengths = []
-    weaknesses = []
-    improvements = []
-    missing_skills = []
+def calculate_ats_score(resume_text, matched_skills, required_skills):
 
-    text = resume_text.lower()
+    resume_lower = resume_text.lower()
 
     # -------------------------
-    # Contact Information (5)
+    # ATS Parse Rate
     # -------------------------
-    if "@" in resume_text:
-        score += 5
-        strengths.append("Email Address Added")
-    else:
-        weaknesses.append("Email Missing")
-        improvements.append("Add a professional email address")
+    ats_parse = 100
+
+    if "|" in resume_text:
+        ats_parse -= 10
+
+    if len(resume_text) < 500:
+        ats_parse -= 15
+
+    ats_parse = max(60, ats_parse)
 
     # -------------------------
-    # Education (10)
+    # Resume Sections
     # -------------------------
-    if "education" in text:
-        score += 10
-        strengths.append("Education Section Present")
-    else:
-        weaknesses.append("Education Section Missing")
-        improvements.append("Add Education details")
-
-    # -------------------------
-    # Technical Skills (15)
-    # -------------------------
-    skill_marks = min(len(skills) * 2, 15)
-    score += skill_marks
-
-    if len(skills) >= 7:
-        strengths.append("Good Technical Skills")
-    else:
-        weaknesses.append("Limited Technical Skills")
-        improvements.append("Learn more industry skills")
-
-    # -------------------------
-    # Projects (20)
-    # -------------------------
-    if "project" in text:
-        score += 20
-        strengths.append("Projects Included")
-    else:
-        weaknesses.append("No Projects")
-        improvements.append("Add at least 2 Projects")
-
-    # -------------------------
-    # Internship / Experience (15)
-    # -------------------------
-    if "internship" in text or "experience" in text:
-        score += 15
-        strengths.append("Experience Mentioned")
-    else:
-        weaknesses.append("No Internship")
-        improvements.append("Complete an Internship")
-
-    # -------------------------
-    # GitHub / Portfolio (10)
-    # -------------------------
-    if "github" in text:
-        score += 5
-        strengths.append("GitHub Profile Added")
-    else:
-        missing_skills.append("GitHub")
-        improvements.append("Add GitHub Profile")
-
-    if "portfolio" in text:
-        score += 5
-        strengths.append("Portfolio Added")
-    else:
-        improvements.append("Create Portfolio Website")
-
-    # -------------------------
-    # Certifications (10)
-    # -------------------------
-    if "certificate" in text or "certification" in text:
-        score += 10
-        strengths.append("Certifications Added")
-    else:
-        weaknesses.append("No Certifications")
-        improvements.append("Complete Certifications")
-
-    # -------------------------
-    # Resume Formatting (5)
-    # -------------------------
-    if len(resume_text) > 800:
-        score += 5
-    else:
-        weaknesses.append("Resume is too short")
-        improvements.append("Improve Resume Content")
-
-    # -------------------------
-    # Company Skills (10)
-    # -------------------------
-    company_skills = [
-        "Python",
-        "SQL",
-        "React",
-        "Git",
-        "Docker"
+    sections = [
+        "contact",
+        "education",
+        "skills",
+        "projects",
+        "experience",
+        "certification"
     ]
 
-    matched = []
+    found_sections = 0
 
-    for skill in company_skills:
-        if skill in skills:
-            matched.append(skill)
-        else:
-            missing_skills.append(skill)
+    for section in sections:
+        if section in resume_lower:
+            found_sections += 1
 
-    company_score = int((len(matched) / len(company_skills)) * 10)
-
-    score += company_score
+    section_score = round((found_sections / len(sections)) * 100)
 
     # -------------------------
-    # Placement Level
+    # Skill Match
     # -------------------------
-    if score <= 40:
-        level = "🔴 Needs Major Improvement"
-    elif score <= 60:
-        level = "🟠 Beginner"
-    elif score <= 75:
-        level = "🟡 Placement Ready"
-    elif score <= 90:
-        level = "🟢 Strong Candidate"
+    if required_skills:
+        skill_score = round(
+            (len(matched_skills) / len(required_skills)) * 100
+        )
     else:
-        level = "⭐ Outstanding"
+        skill_score = 0
 
-    potential_score = min(score + len(improvements) * 4, 100)
+    # -------------------------
+    # Project Score
+    # -------------------------
+    project_score = 30
+
+    if "project" in resume_lower:
+        project_score += 30
+
+    if "github" in resume_lower:
+        project_score += 20
+
+    if "http" in resume_lower:
+        project_score += 10
+
+    if "react" in resume_lower or "python" in resume_lower:
+        project_score += 10
+
+    project_score = min(project_score, 100)
+
+    # -------------------------
+    # Experience
+    # -------------------------
+    experience_score = 20
+
+    experience_keywords = [
+        "intern",
+        "experience",
+        "worked",
+        "developer",
+        "engineer"
+    ]
+
+    for word in experience_keywords:
+        if word in resume_lower:
+            experience_score += 15
+
+    experience_score = min(experience_score, 100)
+
+    # -------------------------
+    # Grammar (basic heuristic)
+    # -------------------------
+    grammar_score = 90
+
+    repeated_spaces = len(re.findall(r" {2,}", resume_text))
+    grammar_score -= repeated_spaces * 2
+
+    grammar_score = max(60, grammar_score)
+
+    # -------------------------
+    # Formatting
+    # -------------------------
+    formatting_score = 100
+
+    if len(resume_text.splitlines()) < 15:
+        formatting_score -= 20
+
+    if len(resume_text) < 700:
+        formatting_score -= 10
+
+    formatting_score = max(60, formatting_score)
+
+    # -------------------------
+    # Overall ATS Score
+    # -------------------------
+    overall_score = round(
+        ats_parse * 0.15 +
+        section_score * 0.20 +
+        skill_score * 0.30 +
+        project_score * 0.15 +
+        experience_score * 0.10 +
+        grammar_score * 0.05 +
+        formatting_score * 0.05
+    )
+
+    overall_score = max(35, min(overall_score, 100))
 
     return {
-        "resume_score": score,
-        "level": level,
-        "potential_score": potential_score,
-        "strengths": strengths,
-        "weaknesses": weaknesses,
-        "missing_skills": list(set(missing_skills)),
-        "improvements": improvements,
-        "matched_skills": matched
+        "overall_score": overall_score,
+        "ats_parse": ats_parse,
+        "section_score": section_score,
+        "skill_score": skill_score,
+        "project_score": project_score,
+        "experience_score": experience_score,
+        "grammar_score": grammar_score,
+        "formatting_score": formatting_score,
     }
