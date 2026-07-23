@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <path d="M28 8c-.4 0-.8.2-1 .6L16.4 29.6c-.3.5 0 1.1.6 1.1h21c.4 0 .8-.2 1-.6L49.6 9.6c.3-.5 0-1.1-.6-1.1L28 8z" fill="#2684FF"/>
+  <path d="M28 8L16.8 30.2c3.1 5.7 9.2 9.6 16.2 9.6 7 0 13.1-3.9 16.2-9.6L38 8.6c-.2-.4-.6-.6-1-.6H28z" fill="url(#atlassianGrad)"/>
+  <text x="75" y="32" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#0052CC" text-anchor="start">Atlassian</text>
+  <defs>
+    <linearGradient id="atlassianGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2684FF"/>
+      <stop offset="100%" stop-color="#0052CC"/>
+    </linearGradient>
+  </defs>
+</svg>

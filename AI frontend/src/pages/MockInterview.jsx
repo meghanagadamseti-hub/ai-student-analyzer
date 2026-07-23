@@ -1,179 +1,133 @@
+import { motion } from "framer-motion";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
-import {
-  FaMicrophone,
-  FaBuilding,
-  FaCode,
-  FaClock,
-  FaPlayCircle,
-  FaCheckCircle,
-} from "react-icons/fa";
+import { FaMicrophone, FaBuilding, FaCode, FaClock, FaPlayCircle, FaCheckCircle, FaBrain } from "react-icons/fa";
+import { HiSparkles } from "react-icons/hi2";
+
+const topics = ["DSA","OOP","DBMS","Operating System","Computer Networks","SQL","React","Java"];
 
 function MockInterview() {
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen" style={{ background: "var(--bg-base)" }}>
       <Sidebar />
-
-       <main className="ml-72 flex-1 p-8">
+      <main className="ml-64 flex-1 p-6 min-w-0">
         <Navbar />
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800">
-            AI Mock Interview
-          </h1>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-7">
+          <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>AI Mock Interview</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-faint)" }}>Practice interviews tailored to your target company and role.</p>
+        </motion.div>
 
-          <p className="text-gray-500 mt-2">
-            Practice interviews tailored to your target company and role.
-          </p>
-        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2 space-y-5">
 
-        {/* Configuration */}
-        <div className="bg-white rounded-2xl shadow-md p-8">
+            {/* Config */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="theme-card rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(99,102,241,0.12)", color: "var(--color-indigo-text)" }}>
+                  <FaBrain className="text-sm" />
+                </div>
+                <h2 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Interview Configuration</h2>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { label: "Company",   icon: FaBuilding, iconColor: "var(--color-indigo-text)", options: ["Google","Microsoft","Amazon","Adobe","TCS","Infosys"] },
+                  { label: "Job Role",  icon: FaCode,     iconColor: "var(--color-green-text)",  options: ["Software Engineer","Frontend Developer","Backend Developer","Full Stack Developer","AI Engineer"] },
+                  { label: "Difficulty",icon: null,       iconColor: null,                        options: ["Easy","Medium","Hard"] },
+                  { label: "Duration",  icon: FaClock,    iconColor: "var(--color-red-text)",    options: ["15 Minutes","30 Minutes","45 Minutes"] },
+                ].map((field) => {
+                  const Icon = field.icon;
+                  return (
+                    <div key={field.label}>
+                      <label className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-2"
+                        style={{ color: "var(--text-faint)" }}>
+                        {Icon && <Icon className="text-[10px]" style={{ color: field.iconColor }} />}
+                        {field.label}
+                      </label>
+                      <select className="select-dark">
+                        {field.options.map((o) => <option key={o}>{o}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
 
-          <h2 className="text-2xl font-semibold mb-6">
-            Interview Configuration
-          </h2>
+            {/* Topics */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+              className="theme-card rounded-2xl p-6">
+              <h2 className="font-semibold text-base mb-5" style={{ color: "var(--text-primary)" }}>Interview Topics</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {topics.map((topic) => (
+                  <label key={topic}
+                    className="flex items-center gap-2.5 rounded-xl p-3 cursor-pointer transition-all duration-200"
+                    style={{ background: "var(--bg-surface)", border: "1px solid var(--border-default)" }}>
+                    <input type="checkbox" defaultChecked className="accent-indigo-500 w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{topic}</span>
+                  </label>
+                ))}
+              </div>
+            </motion.div>
+          </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          {/* Right panel */}
+          <div className="space-y-5">
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="theme-card rounded-2xl p-6">
+              <h2 className="font-semibold text-base mb-5" style={{ color: "var(--text-primary)" }}>Interview Summary</h2>
+              <div className="space-y-3">
+                {[
+                  { icon: FaCheckCircle, color: "#6366f1",  bg: "rgba(99,102,241,0.10)",  label: "Total Questions", value: "20"         },
+                  { icon: FaMicrophone,  color: "#10b981",  bg: "rgba(16,185,129,0.10)",  label: "Voice Mode",      value: "Phase 3"    },
+                  { icon: FaClock,       color: "#f59e0b",  bg: "rgba(245,158,11,0.10)",  label: "Est. Duration",   value: "30 Minutes" },
+                  { icon: HiSparkles,    color: "#06b6d4",  bg: "rgba(6,182,212,0.10)",   label: "AI Feedback",     value: "Instant"    },
+                ].map((s) => {
+                  const Icon = s.icon;
+                  return (
+                    <div key={s.label} className="flex items-center justify-between p-3 rounded-xl"
+                      style={{ background: s.bg, border: `1px solid ${s.color}20` }}>
+                      <div className="flex items-center gap-2">
+                        <Icon style={{ color: s.color, fontSize: "13px" }} />
+                        <span className="text-xs" style={{ color: "var(--text-muted)" }}>{s.label}</span>
+                      </div>
+                      <span className="text-xs font-bold" style={{ color: s.color }}>{s.value}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
 
-            {/* Company */}
-            <div>
-              <label className="font-medium flex items-center gap-2 mb-2">
-                <FaBuilding className="text-indigo-600" />
-                Company
-              </label>
+            {/* AI preview bubble */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+              className="theme-card rounded-2xl p-5"
+              style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))" }}>
+              <div className="flex items-start gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+                  <FaBrain className="text-white text-xs" />
+                </div>
+                <div className="rounded-xl rounded-tl-sm px-3 py-2 text-xs leading-relaxed flex-1"
+                  style={{ background: "var(--bg-card)", color: "var(--text-muted)", border: "1px solid var(--border-default)" }}>
+                  Hello! I'm your AI interviewer. Are you ready to begin?
+                  <span className="inline-block w-1.5 h-3.5 ml-1 rounded-sm align-middle cursor-blink"
+                    style={{ background: "var(--color-indigo-text)" }} />
+                </div>
+              </div>
+              <p className="text-[10px] text-center" style={{ color: "var(--text-faint)" }}>Live AI Interview Preview</p>
+            </motion.div>
 
-              <select className="w-full border rounded-xl p-3">
-                <option>Google</option>
-                <option>Microsoft</option>
-                <option>Amazon</option>
-                <option>Adobe</option>
-                <option>TCS</option>
-                <option>Infosys</option>
-              </select>
-            </div>
-
-            {/* Role */}
-            <div>
-              <label className="font-medium flex items-center gap-2 mb-2">
-                <FaCode className="text-green-600" />
-                Job Role
-              </label>
-
-              <select className="w-full border rounded-xl p-3">
-                <option>Software Engineer</option>
-                <option>Frontend Developer</option>
-                <option>Backend Developer</option>
-                <option>Full Stack Developer</option>
-                <option>AI Engineer</option>
-              </select>
-            </div>
-
-            {/* Difficulty */}
-            <div>
-              <label className="font-medium mb-2 block">
-                Difficulty
-              </label>
-
-              <select className="w-full border rounded-xl p-3">
-                <option>Easy</option>
-                <option>Medium</option>
-                <option>Hard</option>
-              </select>
-            </div>
-
-            {/* Duration */}
-            <div>
-              <label className="font-medium flex items-center gap-2 mb-2">
-                <FaClock className="text-red-500" />
-                Duration
-              </label>
-
-              <select className="w-full border rounded-xl p-3">
-                <option>15 Minutes</option>
-                <option>30 Minutes</option>
-                <option>45 Minutes</option>
-              </select>
-            </div>
-
+            {/* Start button */}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-sm font-bold text-white"
+              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 8px 25px rgba(99,102,241,0.35)" }}>
+              <FaPlayCircle className="text-base" />Start Mock Interview
+            </motion.button>
           </div>
         </div>
-
-        {/* Topics */}
-        <div className="bg-white rounded-2xl shadow-md p-8 mt-8">
-
-          <h2 className="text-2xl font-semibold mb-6">
-            Interview Topics
-          </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-            {[
-              "DSA",
-              "OOP",
-              "DBMS",
-              "Operating System",
-              "Computer Networks",
-              "SQL",
-              "React",
-              "Java",
-            ].map((topic) => (
-              <label
-                key={topic}
-                className="flex items-center gap-3 border rounded-xl p-3 cursor-pointer hover:bg-indigo-50"
-              >
-                <input type="checkbox" defaultChecked />
-                {topic}
-              </label>
-            ))}
-
-          </div>
-        </div>
-
-        {/* Interview Summary */}
-        <div className="bg-white rounded-2xl shadow-md p-8 mt-8">
-
-          <h2 className="text-2xl font-semibold mb-6">
-            Interview Summary
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-6">
-
-            <div className="bg-indigo-50 rounded-xl p-5 text-center">
-              <FaCheckCircle className="text-4xl text-indigo-600 mx-auto mb-3" />
-              <h3 className="text-xl font-bold">20</h3>
-              <p>Total Questions</p>
-            </div>
-
-            <div className="bg-green-50 rounded-xl p-5 text-center">
-              <FaMicrophone className="text-4xl text-green-600 mx-auto mb-3" />
-              <h3 className="text-xl font-bold">Voice Enabled</h3>
-              <p>Coming in Phase 3</p>
-            </div>
-
-            <div className="bg-yellow-50 rounded-xl p-5 text-center">
-              <FaClock className="text-4xl text-yellow-500 mx-auto mb-3" />
-              <h3 className="text-xl font-bold">30 Minutes</h3>
-              <p>Estimated Time</p>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Start Button */}
-        <div className="mt-10 flex justify-center">
-
-          <button className="flex items-center gap-3 px-10 py-4 rounded-xl text-white text-lg font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 transition">
-
-            <FaPlayCircle />
-
-            Start Mock Interview
-
-          </button>
-
-        </div>
-
       </main>
     </div>
   );

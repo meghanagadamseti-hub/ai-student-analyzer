@@ -1,71 +1,63 @@
+/* login.css — legacy class references kept, now overridden by the JSX inline styles */
+
 .googleBtn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  background: #1d191911;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0,0,0,.1);
-  transition: 0.3s;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
 .googleBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0,0,0,.12);
-}
-.googleBtn span {
-  font-weight: 600;
-  color: #111;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .divider {
   display: flex;
   align-items: center;
-  width: 100%;
+  gap: 10px;
   margin: 20px 0;
 }
 
 .dividerLine {
   flex: 1;
   height: 1px;
-  background: #d9d9d9;
+  background: rgba(99, 102, 241, 0.2);
 }
 
 .dividerText {
-  padding: 0 15px;
-  color: #888;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 12px;
+  color: #475569;
+  white-space: nowrap;
 }
 
 .signupContainer {
-  margin-top: 25px;
   text-align: center;
-  font-size: 15px;
-  color: #666;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #64748b;
 }
 
 .signupLink {
-  color: #5b4bff;
-  text-decoration: none;
+  color: #818cf8;
   font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+  transition: color 0.2s;
 }
 
 .signupLink:hover {
+  color: #a5b4fc;
   text-decoration: underline;
-}
-input:focus {
-  border: 1px solid #5b4bff;
-  box-shadow: 0 0 5px rgba(91, 75, 255, 0.4);
-}
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
 }

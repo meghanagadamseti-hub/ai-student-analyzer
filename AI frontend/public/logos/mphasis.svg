@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 60" width="160" height="60">
+  <rect width="160" height="60" rx="8" fill="#FFFFFF"/>
+  <circle cx="30" cy="30" r="20" fill="#E31837"/>
+  <text x="30" y="36" font-family="Arial, sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">M</text>
+  <text x="90" y="36" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#1A1A2E" text-anchor="middle">Mphasis</text>
+</svg>
