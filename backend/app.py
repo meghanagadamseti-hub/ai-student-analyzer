@@ -5,6 +5,7 @@ import os
 from utils.resume_parser import extract_text_from_pdf
 from utils.skill_extractor import extract_skills
 from utils.ats_score import calculate_ats_score
+from utils.learning_generator import generate_learning_plan
 from data.companies import COMPANIES
 
 app = Flask(__name__)
