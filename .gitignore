@@ -1,22 +1,7 @@
 # Python
-venv/
-__pycache__/
-*.pyc
-
-# Node
-node_modules/
-
-# Vite
-dist/
-
-# Environment
-.env
-
-# Uploads (optional)
-uploads/
-# Python
 backend/venv/
 backend/__pycache__/
+backend/data/__pycache__/
 *.pyc
 
 # React
@@ -26,5 +11,8 @@ AI frontend/dist/
 # Environment
 .env
 
-# Uploads
+# Uploaded resumes
 backend/uploads/
+
+# VS Code
+.vscode/
