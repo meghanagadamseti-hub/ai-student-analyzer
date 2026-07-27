@@ -1,137 +1,122 @@
 # utils/ats_score.py
+# ─────────────────────────────────────────────────────────────────────────────
+# Calculates an ATS-style resume score on five weighted dimensions:
+#
+#   Dimension          Weight   Description
+#   ─────────────────  ──────   ────────────────────────────────────────────
+#   Skill Match          50%    How many required skills are present
+#   Resume Sections      20%    Presence of standard resume sections
+#   Projects & Links     15%    GitHub, project descriptions, live URLs
+#   Experience           10%    Work experience and internship signals
+#   Resume Quality        5%    Length, formatting, grammar heuristics
+#
+# Overall score is clamped to [0, 100].
+# The floor is removed so a resume with no matching skills correctly scores low.
+# ─────────────────────────────────────────────────────────────────────────────
 
 import re
 
-def calculate_ats_score(resume_text, matched_skills, required_skills):
 
-    resume_lower = resume_text.lower()
+def calculate_ats_score(
+    resume_text: str,
+    matched_skills: list,
+    required_skills: list,
+) -> dict:
+    """
+    Parameters
+    ----------
+    resume_text     : raw text extracted from the resume PDF
+    matched_skills  : skills present in both the resume and the role requirement
+    required_skills : full list of skills the selected role requires
 
-    # -------------------------
-    # ATS Parse Rate
-    # -------------------------
-    ats_parse = 100
+    Returns
+    -------
+    dict with keys:
+        overall_score     int   0-100
+        skill_score       int   0-100  (raw skill match %)
+        section_score     int   0-100
+        project_score     int   0-100
+        experience_score  int   0-100
+        quality_score     int   0-100
+    """
+    text = resume_text or ""
+    low  = text.lower()
 
-    if "|" in resume_text:
-        ats_parse -= 10
-
-    if len(resume_text) < 500:
-        ats_parse -= 15
-
-    ats_parse = max(60, ats_parse)
-
-    # -------------------------
-    # Resume Sections
-    # -------------------------
-    sections = [
-        "contact",
-        "education",
-        "skills",
-        "projects",
-        "experience",
-        "certification"
-    ]
-
-    found_sections = 0
-
-    for section in sections:
-        if section in resume_lower:
-            found_sections += 1
-
-    section_score = round((found_sections / len(sections)) * 100)
-
-    # -------------------------
-    # Skill Match
-    # -------------------------
+    # ── 1. Skill Match  (50%) ─────────────────────────────────────────────
     if required_skills:
-        skill_score = round(
-            (len(matched_skills) / len(required_skills)) * 100
-        )
+        skill_score = round((len(matched_skills) / len(required_skills)) * 100)
     else:
         skill_score = 0
 
-    # -------------------------
-    # Project Score
-    # -------------------------
-    project_score = 30
+    # ── 2. Resume Sections  (20%) ─────────────────────────────────────────
+    section_keywords = {
+        "contact":       ["contact", "email", "phone", "linkedin", "github"],
+        "education":     ["education", "b.tech", "b.e.", "bachelor", "university",
+                          "college", "degree", "cgpa", "gpa"],
+        "skills":        ["skills", "technical skills", "technologies", "tech stack"],
+        "projects":      ["project", "projects", "work done", "portfolio"],
+        "experience":    ["experience", "internship", "intern", "work experience",
+                          "employment", "worked at"],
+        "achievements":  ["achievement", "award", "certification", "certificate",
+                          "competition", "hackathon"],
+    }
+    found_sections = 0
+    for _section, signals in section_keywords.items():
+        if any(sig in low for sig in signals):
+            found_sections += 1
+    section_score = round((found_sections / len(section_keywords)) * 100)
 
-    if "project" in resume_lower:
-        project_score += 30
-
-    if "github" in resume_lower:
+    # ── 3. Projects & Links  (15%) ────────────────────────────────────────
+    project_score = 0
+    if "project" in low:
+        project_score += 40
+    if "github" in low or "github.com" in low:
+        project_score += 25
+    if re.search(r"https?://", low):
         project_score += 20
-
-    if "http" in resume_lower:
-        project_score += 10
-
-    if "react" in resume_lower or "python" in resume_lower:
-        project_score += 10
-
+    if "deployed" in low or "live" in low or "production" in low:
+        project_score += 15
     project_score = min(project_score, 100)
 
-    # -------------------------
-    # Experience
-    # -------------------------
-    experience_score = 20
-
-    experience_keywords = [
-        "intern",
-        "experience",
-        "worked",
-        "developer",
-        "engineer"
+    # ── 4. Experience  (10%) ──────────────────────────────────────────────
+    experience_score = 0
+    exp_signals = [
+        "intern", "internship", "experience", "worked", "developer",
+        "engineer", "analyst", "associate", "position", "role",
     ]
-
-    for word in experience_keywords:
-        if word in resume_lower:
-            experience_score += 15
-
+    for sig in exp_signals:
+        if sig in low:
+            experience_score += 12
     experience_score = min(experience_score, 100)
 
-    # -------------------------
-    # Grammar (basic heuristic)
-    # -------------------------
-    grammar_score = 90
+    # ── 5. Resume Quality  (5%) ───────────────────────────────────────────
+    quality_score = 100
+    word_count = len(text.split())
+    if word_count < 150:
+        quality_score -= 30
+    elif word_count < 300:
+        quality_score -= 15
+    if len(text.splitlines()) < 10:
+        quality_score -= 20
+    double_spaces = len(re.findall(r" {3,}", text))
+    quality_score -= min(double_spaces * 3, 20)
+    quality_score = max(0, min(quality_score, 100))
 
-    repeated_spaces = len(re.findall(r" {2,}", resume_text))
-    grammar_score -= repeated_spaces * 2
-
-    grammar_score = max(60, grammar_score)
-
-    # -------------------------
-    # Formatting
-    # -------------------------
-    formatting_score = 100
-
-    if len(resume_text.splitlines()) < 15:
-        formatting_score -= 20
-
-    if len(resume_text) < 700:
-        formatting_score -= 10
-
-    formatting_score = max(60, formatting_score)
-
-    # -------------------------
-    # Overall ATS Score
-    # -------------------------
-    overall_score = round(
-        ats_parse * 0.15 +
-        section_score * 0.20 +
-        skill_score * 0.30 +
-        project_score * 0.15 +
-        experience_score * 0.10 +
-        grammar_score * 0.05 +
-        formatting_score * 0.05
+    # ── Overall weighted score ─────────────────────────────────────────────
+    overall = round(
+        skill_score       * 0.50 +
+        section_score     * 0.20 +
+        project_score     * 0.15 +
+        experience_score  * 0.10 +
+        quality_score     * 0.05
     )
-
-    overall_score = max(35, min(overall_score, 100))
+    overall = max(0, min(overall, 100))
 
     return {
-        "overall_score": overall_score,
-        "ats_parse": ats_parse,
-        "section_score": section_score,
-        "skill_score": skill_score,
-        "project_score": project_score,
+        "overall_score":    overall,
+        "skill_score":      skill_score,
+        "section_score":    section_score,
+        "project_score":    project_score,
         "experience_score": experience_score,
-        "grammar_score": grammar_score,
-        "formatting_score": formatting_score,
+        "quality_score":    quality_score,
     }

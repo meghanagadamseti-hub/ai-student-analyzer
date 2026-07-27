@@ -5,7 +5,7 @@ import { HiSparkles } from "react-icons/hi2";
 
 const API = "http://127.0.0.1:5000";
 
-function CompanySelection({ resumeData, setResumeData, setAnalysisComplete }) {
+function CompanySelection({ resumeData, setResumeData, setAnalysisComplete, setIsAnalyzing }) {
   /* ── dropdown data from /companies ── */
   const [companyList, setCompanyList] = useState([]);   // [{ name, roles, ... }]
   const [roleList,    setRoleList]    = useState([]);   // ["Software Engineer", ...]
@@ -13,10 +13,10 @@ function CompanySelection({ resumeData, setResumeData, setAnalysisComplete }) {
   const [loadingRoles,     setLoadingRoles]     = useState(false);
 
   /* ── form state ── */
-  const [company,    setCompany]    = useState("");
-  const [role,       setRole]       = useState("");
-  const [experience, setExperience] = useState("Fresher");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [company,        setCompany]        = useState("");
+  const [role,           setRole]           = useState("");
+  const [experience,     setExperience]     = useState("Fresher");
+  const [localAnalyzing, setLocalAnalyzing] = useState(false);  // button spinner
 
   /* ── 1. Fetch company list on mount ── */
   useEffect(() => {
@@ -71,25 +71,46 @@ function CompanySelection({ resumeData, setResumeData, setAnalysisComplete }) {
       .finally(() => setLoadingRoles(false));
   }, [company]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── 3. Analyze (unchanged logic) ── */
+  /* ── 3. Analyze — with loading state, error handling, stale-clear ── */
   const analyzeResume = async () => {
-    if (!resumeData?.uploaded) { alert("Please upload your resume first."); return; }
-    setIsAnalyzing(true);
+    if (!resumeData?.uploaded) {
+      alert("Please upload your resume first.");
+      return;
+    }
+    if (!company || !role) {
+      alert("Please select a company and role.");
+      return;
+    }
+
+    // Clear previous results so stale data never shows
+    setAnalysisComplete(false);
+    setIsAnalyzing(true);       // parent shows skeleton panels
+    setLocalAnalyzing(true);    // button shows spinner
+
     try {
       const response = await fetch(`${API}/analyze`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ company, role, experience }),
       });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${response.status}`);
+      }
+
       const data = await response.json();
-      console.log(data);
-      setResumeData(data);
+      console.log("[analyze] response:", data);
+
+      // Preserve the uploaded flag so subsequent analyses still work
+      setResumeData({ ...data, uploaded: true });
       setAnalysisComplete(true);
     } catch (error) {
-      console.error(error);
-      alert("Analysis failed.");
+      console.error("[analyze] error:", error);
+      alert(`Analysis failed: ${error.message || "Could not connect to backend."}`);
     } finally {
       setIsAnalyzing(false);
+      setLocalAnalyzing(false);
     }
   };
 
@@ -231,11 +252,11 @@ function CompanySelection({ resumeData, setResumeData, setAnalysisComplete }) {
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
           onClick={analyzeResume}
-          disabled={isAnalyzing || loadingCompanies || !company || !role}
+          disabled={localAnalyzing || loadingCompanies || !company || !role}
           className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
           style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
         >
-          {isAnalyzing
+          {localAnalyzing
             ? <><FaSpinner className="animate-spin" />Analyzing Resume...</>
             : <><HiSparkles />Analyze Resume</>
           }

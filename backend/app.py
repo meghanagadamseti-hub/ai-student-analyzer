@@ -2,11 +2,13 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 
-from utils.resume_parser      import extract_text_from_pdf
-from utils.skill_extractor    import extract_skills
-from utils.ats_score          import calculate_ats_score
-from utils.learning_generator import generate_learning_plan
+from utils.resume_parser       import extract_text_from_pdf
+from utils.skill_extractor     import extract_skills
+from utils.ats_score           import calculate_ats_score
+from utils.learning_generator  import generate_learning_plan
 from utils.interview_generator import generate_interview_questions
+from utils.answer_evaluator    import evaluate_answer
+from services.ai_resume_coach  import generate_coach_report
 from data.companies import (
     COMPANIES,
     get_required_skills,
@@ -117,14 +119,62 @@ def analyze_resume():
 
     resume_text     = LATEST_RESUME["text"]
     detected_skills = LATEST_RESUME["skills"]
-    skills_lower    = {s.lower() for s in detected_skills}
 
-    matched_skills = [s for s in required_skills if s.lower() in skills_lower]
-    missing_skills = [s for s in required_skills if s.lower() not in skills_lower]
+    # ── Normalise both sides to lowercase for comparison ──────────────────
+    # Build a map: lowercase → original-case for detected skills
+    detected_lower_map = {s.lower(): s for s in detected_skills}
+    detected_lower_set = set(detected_lower_map.keys())
+
+    # Also expand common abbreviations / aliases in the required list
+    # so that e.g. "DSA" matches "Data Structures" in the detected list
+    EXPAND = {
+        "dsa":                      {"dsa", "data structures", "algorithms",
+                                     "data structures & algorithms",
+                                     "data structures and algorithms"},
+        "oop":                      {"oop", "oops", "object oriented programming",
+                                     "object-oriented programming"},
+        "dbms":                     {"dbms", "database management",
+                                     "database management system"},
+        "operating system":         {"operating system", "operating systems", "os"},
+        "computer networks":        {"computer networks", "computer network",
+                                     "networking", "computer networking"},
+        "rest api":                 {"rest api", "rest", "restful", "restful api",
+                                     "rest apis", "http api"},
+        "node.js":                  {"node.js", "nodejs", "node js"},
+        "react":                    {"react", "reactjs", "react.js", "react js"},
+        "express.js":               {"express.js", "expressjs", "express js", "express"},
+        "spring boot":              {"spring boot", "springboot"},
+        "ruby on rails":            {"ruby on rails", "ror", "rails"},
+        "scikit-learn":             {"scikit-learn", "scikit learn", "sklearn"},
+        "ci/cd":                    {"ci/cd", "cicd", "continuous integration",
+                                     "continuous deployment", "github actions"},
+        "machine learning":         {"machine learning", "ml", "ai/ml"},
+        "deep learning":            {"deep learning", "dl"},
+        "system design":            {"system design"},
+        "microservices":            {"microservices", "microservice",
+                                     "micro services", "micro-services"},
+        "distributed systems":      {"distributed systems", "distributed system"},
+    }
+
+    def _is_matched(required_skill: str) -> bool:
+        """
+        Return True if the required skill is present in the detected set,
+        using case-insensitive matching plus alias expansion.
+        """
+        rk = required_skill.lower()
+        # Direct match
+        if rk in detected_lower_set:
+            return True
+        # Alias / abbreviation expansion
+        aliases = EXPAND.get(rk, set())
+        return bool(aliases & detected_lower_set)
+
+    matched_skills = [s for s in required_skills if _is_matched(s)]
+    missing_skills = [s for s in required_skills if not _is_matched(s)]
 
     # Preferred skills gap
-    preferred_skills   = role_data.get("preferred_skills", []) if isinstance(role_data, dict) else []
-    preferred_missing  = [s for s in preferred_skills if s.lower() not in skills_lower]
+    preferred_skills  = role_data.get("preferred_skills", []) if isinstance(role_data, dict) else []
+    preferred_missing = [s for s in preferred_skills if not _is_matched(s)]
 
     # ── ATS score ────────────────────────────────────────────
     ats = calculate_ats_score(resume_text, matched_skills, required_skills)
@@ -207,6 +257,90 @@ def analyze_resume():
 
 
 # ─────────────────────────────────────────────────────────────
+# POST /resume-coach
+# Body: { company, role, experience }
+# Uses LATEST_RESUME session — resume must be uploaded first.
+# Returns the full AI Resume Coach report.
+# ─────────────────────────────────────────────────────────────
+@app.route("/resume-coach", methods=["POST"])
+def resume_coach():
+    print("\n===== RESUME-COACH API CALLED =====")
+
+    if not LATEST_RESUME["text"]:
+        return jsonify({"error": "Please upload a resume first."}), 400
+
+    body       = request.get_json(silent=True) or {}
+    company    = body.get("company",    "").strip()
+    role       = body.get("role",       "").strip()
+    experience = body.get("experience", "Fresher").strip()
+
+    if not company or not role:
+        return jsonify({"error": "company and role are required."}), 400
+
+    print(f"Coach: {company} / {role} / {experience}")
+
+    resume_text     = LATEST_RESUME["text"]
+    detected_skills = LATEST_RESUME["skills"]
+
+    # Reuse the same skill-matching logic as /analyze
+    required_skills = get_required_skills(company, role)
+    role_data       = get_role_data(company, role)
+
+    if not required_skills:
+        # Graceful fallback — still run coach with empty required list
+        required_skills = []
+
+    skills_lower    = {s.lower() for s in detected_skills}
+    EXPAND_COACH    = {
+        "dsa": {"dsa","data structures","algorithms"},
+        "oop": {"oop","oops","object oriented programming"},
+        "rest api": {"rest api","rest","restful","restful api"},
+        "node.js": {"node.js","nodejs","node js"},
+        "react": {"react","reactjs","react.js"},
+    }
+
+    def _matched(req_skill):
+        rk = req_skill.lower()
+        if rk in skills_lower: return True
+        return bool(EXPAND_COACH.get(rk, set()) & skills_lower)
+
+    matched_skills = [s for s in required_skills if _matched(s)]
+    missing_skills = [s for s in required_skills if not _matched(s)]
+
+    ats_scores = calculate_ats_score(resume_text, matched_skills, required_skills)
+
+    report = generate_coach_report(
+        resume_text     = resume_text,
+        detected_skills = detected_skills,
+        missing_skills  = missing_skills,
+        company         = company,
+        role            = role,
+        experience      = experience,
+        ats_score       = ats_scores["overall_score"],
+        required_skills = required_skills,
+        ats_breakdown   = ats_scores,
+    )
+
+    return jsonify(report)
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /rewrite-bullet
+# Body: { original, company, role }
+# Returns: { rewritten }
+# ─────────────────────────────────────────────────────────────
+@app.route("/rewrite-bullet", methods=["POST"])
+def rewrite_bullet_endpoint():
+    from services.ai_resume_coach import rewrite_bullet
+    body     = request.get_json(silent=True) or {}
+    original = (body.get("original") or "").strip()
+    if not original:
+        return jsonify({"error": "original is required."}), 400
+    rewritten = rewrite_bullet(original, LATEST_RESUME.get("skills", []))
+    return jsonify({"original": original, "rewritten": rewritten})
+
+
+# ─────────────────────────────────────────────────────────────
 # POST /learning
 # Body (optional): { detected_skills, missing_skills, ats_score }
 # Falls back to LATEST_RESUME when body is empty.
@@ -278,6 +412,33 @@ def generate_interview():
         "summary":    summary,
         "questions":  questions,
     })
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /submit-answer
+# Body : { "question": str, "answer": str }
+# Returns: { score, feedback, strengths, improvements }
+#   score  — float 0-10 (one decimal)
+#   feedback     — natural-language paragraph
+#   strengths    — list[str]  what the candidate did well
+#   improvements — list[str]  specific things to fix
+# ─────────────────────────────────────────────────────────────
+@app.route("/submit-answer", methods=["POST"])
+def submit_answer():
+    body = request.get_json(silent=True) or {}
+
+    question = (body.get("question") or "").strip()
+    answer   = (body.get("answer")   or "").strip()
+
+    print(f"\n===== SUBMIT-ANSWER =====")
+    print(f"Q: {question[:80]}")
+    print(f"A: {answer[:80]}")
+
+    if not question:
+        return jsonify({"error": "question is required."}), 400
+
+    result = evaluate_answer(question=question, answer=answer)
+    return jsonify(result)
 
 
 # ─────────────────────────────────────────────────────────────
