@@ -24,7 +24,7 @@ function ProgressBar({ current, total }) {
         style={{ background: "var(--border-subtle)" }}>
         <motion.div
           className="h-2 rounded-full"
-          style={{ background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }}
+          style={{ background: "linear-gradient(90deg,#7C3AED,#6D28D9)" }}
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
@@ -129,7 +129,7 @@ export default function InterviewSession({ questions, config, onFinish }) {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+                style={{ background: "linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
                 <FaBrain className="text-white" style={{ fontSize: "12px" }} />
               </div>
               <div>
@@ -216,7 +216,7 @@ export default function InterviewSession({ questions, config, onFinish }) {
                     lineHeight:  "1.7",
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "#6366f1";
+                    e.target.style.borderColor = "#7C3AED";
                     e.target.style.boxShadow   = "0 0 0 3px rgba(99,102,241,0.12)";
                   }}
                   onBlur={(e) => {
@@ -261,7 +261,7 @@ export default function InterviewSession({ questions, config, onFinish }) {
                 className="w-7 h-7 rounded-lg text-[11px] font-bold transition-all"
                 style={{
                   background: i === idx
-                    ? "linear-gradient(135deg,#6366f1,#8b5cf6)"
+                    ? "linear-gradient(135deg,#7C3AED,#6D28D9)"
                     : answers[q.id]?.trim()
                     ? "rgba(16,185,129,0.15)"
                     : "var(--bg-surface)",
@@ -401,7 +401,7 @@ export default function InterviewSession({ questions, config, onFinish }) {
         >
           <div className="flex items-start gap-2">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+              style={{ background: "linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
               <FaBrain className="text-white" style={{ fontSize: "12px" }} />
             </div>
             <div className="rounded-xl rounded-tl-sm px-3 py-2.5 flex-1 text-xs leading-relaxed"

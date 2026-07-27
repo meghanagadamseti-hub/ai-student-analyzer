@@ -128,7 +128,7 @@ export default function InterviewSetup({ onStart, loading, error }) {
         <div className="theme-card rounded-2xl p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+              style={{ background: "linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
               <FaBrain className="text-white" style={{ fontSize: "16px" }} />
             </div>
             <div>
@@ -197,9 +197,9 @@ export default function InterviewSetup({ onStart, loading, error }) {
                   className="flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-200"
                   style={{
                     background: active
-                      ? "linear-gradient(135deg,#6366f1,#8b5cf6)"
+                      ? "linear-gradient(135deg,#7C3AED,#6D28D9)"
                       : "var(--bg-surface)",
-                    border: `1.5px solid ${active ? "#6366f1" : "var(--border-default)"}`,
+                    border: `1.5px solid ${active ? "#7C3AED" : "var(--border-default)"}`,
                     color:  active ? "#ffffff" : "var(--text-muted)",
                     boxShadow: active ? "0 4px 14px rgba(99,102,241,0.35)" : "none",
                   }}
@@ -241,7 +241,7 @@ export default function InterviewSetup({ onStart, loading, error }) {
           whileTap={!loading  ? { scale: 0.98 } : {}}
           className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-sm font-bold text-white disabled:opacity-60 disabled:cursor-not-allowed"
           style={{
-            background:  "linear-gradient(135deg,#6366f1,#8b5cf6)",
+            background:  "linear-gradient(135deg,#7C3AED,#6D28D9)",
             boxShadow:   loading ? "none" : "0 8px 28px rgba(99,102,241,0.40)",
           }}
         >
@@ -272,7 +272,7 @@ export default function InterviewSetup({ onStart, loading, error }) {
             Session Summary
           </h3>
           <div className="space-y-2.5">
-            <SummaryChip icon={FaBuilding}     color="#6366f1" label="Company"    value={company} />
+            <SummaryChip icon={FaBuilding}     color="#7C3AED" label="Company"    value={company} />
             <SummaryChip icon={FaCode}         color="#10b981" label="Role"       value={role.length > 18 ? role.slice(0,18)+"…" : role} />
             <SummaryChip icon={FaTachometerAlt}color={selectedDiff.color} label="Difficulty" value={difficulty} />
             <SummaryChip icon={FaListOl}       color="#22d3ee" label="Questions"  value={`${numQ} Questions`} />
@@ -291,7 +291,7 @@ export default function InterviewSetup({ onStart, loading, error }) {
         >
           <div className="flex items-start gap-2 mb-3">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+              style={{ background: "linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
               <FaRobot className="text-white" style={{ fontSize: "12px" }} />
             </div>
             <div className="rounded-xl rounded-tl-sm px-3 py-2.5 flex-1 text-xs leading-relaxed"

@@ -126,7 +126,7 @@ export default function InterviewResults({ results, loading, config, onRetry, on
       <div className="space-y-6">
         <div className="theme-card rounded-2xl p-8 flex flex-col items-center gap-5">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+            style={{ background: "linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
             <FaSpinner className="text-white animate-spin" style={{ fontSize: "22px" }} />
           </div>
           <div className="text-center">
@@ -140,7 +140,7 @@ export default function InterviewResults({ results, loading, config, onRetry, on
           <div className="w-64 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border-subtle)" }}>
             <motion.div
               className="h-1.5 rounded-full"
-              style={{ background: "linear-gradient(90deg,#6366f1,#8b5cf6)" }}
+              style={{ background: "linear-gradient(90deg,#7C3AED,#6D28D9)" }}
               animate={{ width: ["0%","100%","0%"] }}
               transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
             />
@@ -186,7 +186,7 @@ export default function InterviewResults({ results, loading, config, onRetry, on
         }}
       >
         <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-20 blur-3xl pointer-events-none"
-          style={{ background: "radial-gradient(circle,#6366f1,transparent)" }} />
+          style={{ background: "radial-gradient(circle,#7C3AED,transparent)" }} />
         <div className="absolute top-0 left-0 right-0 h-0.5"
           style={{ background: "linear-gradient(90deg,transparent,rgba(99,102,241,0.6),transparent)" }} />
 
@@ -220,7 +220,7 @@ export default function InterviewResults({ results, loading, config, onRetry, on
           <div className="flex flex-col gap-2 flex-shrink-0">
             <button onClick={onRetry}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-85 transition-opacity"
-              style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
+              style={{ background: "linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
               <FaRedo style={{ fontSize: "11px" }} />Try Again
             </button>
             <button onClick={onHome}
@@ -234,7 +234,7 @@ export default function InterviewResults({ results, loading, config, onRetry, on
 
       {/* ── Four score cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ScoreCard label="Overall"       score={overall_score}       color="#6366f1" icon={FaTrophy}   delay={0.0}  />
+        <ScoreCard label="Overall"       score={overall_score}       color="#7C3AED" icon={FaTrophy}   delay={0.0}  />
         <ScoreCard label="Technical"     score={technical_score}     color="#818cf8" icon={FaBrain}    delay={0.07} />
         <ScoreCard label="Communication" score={communication_score} color="#34d399" icon={FaComments} delay={0.14} />
         <ScoreCard label="Confidence"    score={confidence_score}    color="#fbbf24" icon={FaStar}     delay={0.21} />
@@ -366,7 +366,7 @@ export default function InterviewResults({ results, loading, config, onRetry, on
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { label: "Retake Interview",     action: onRetry,   color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
+            { label: "Retake Interview",     action: onRetry,   color: "#7C3AED", bg: "rgba(99,102,241,0.12)" },
             { label: "Review Weak Areas",    action: () => {},  color: "#fbbf24", bg: "rgba(245,158,11,0.10)" },
             { label: "Practice More Skills", action: () => {},  color: "#34d399", bg: "rgba(16,185,129,0.10)" },
           ].map((item) => (

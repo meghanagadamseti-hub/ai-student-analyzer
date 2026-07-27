@@ -16,7 +16,7 @@ function AnimatedBar({ value, color, delay = 0 }) {
 }
 
 const scoreCards = [
-  { label: "Resume Score",       value: 89,   icon: FaFileAlt,   color: "#6366f1", desc: "Strong structure"     },
+  { label: "Resume Score",       value: 89,   icon: FaFileAlt,   color: "#7C3AED", desc: "Strong structure"     },
   { label: "ATS Score",          value: 91,   icon: FaChartLine, color: "#10b981", desc: "ATS-friendly format"  },
   { label: "Interview Readiness",value: 82,   icon: FaCheckCircle,color:"#f59e0b", desc: "Near interview-ready" },
   { label: "Target Company",     value: null, display: "Google", icon: FaBuilding, color: "#ef4444", desc: "Software Engineer" },
@@ -101,7 +101,7 @@ function Analysis() {
               <span className="text-xl font-bold" style={{ color: "var(--color-indigo-text)" }}>89%</span>
             </div>
           </div>
-          <AnimatedBar value={89} color="linear-gradient(90deg, #6366f1, #8b5cf6)" />
+          <AnimatedBar value={89} color="linear-gradient(90deg, #7C3AED, #6D28D9)" />
           <p className="text-sm mt-4 leading-relaxed" style={{ color: "var(--text-muted)" }}>
             Your resume has a strong structure and good technical skills.
             Adding industry-level projects and cloud technologies will further improve your profile.
@@ -109,7 +109,7 @@ function Analysis() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
             {[
               { label: "Technical Keywords", v: 91, color: "#10b981" },
-              { label: "Project Impact",     v: 78, color: "#6366f1" },
+              { label: "Project Impact",     v: 78, color: "#7C3AED" },
               { label: "Cloud & DevOps",     v: 55, color: "#f59e0b" },
             ].map((item, i) => (
               <div key={item.label} className="rounded-xl p-4"

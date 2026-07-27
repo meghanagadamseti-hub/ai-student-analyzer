@@ -27,7 +27,7 @@ function Toggle({ label, defaultChecked = false }) {
       <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
       <button onClick={() => setOn(!on)}
         className="relative w-10 h-5 rounded-full flex-shrink-0"
-        style={{ background: on ? "#6366f1" : "var(--border-default)", transition: "background 0.3s ease" }}>
+        style={{ background: on ? "#7C3AED" : "var(--border-default)", transition: "background 0.3s ease" }}>
         <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
           style={{ left: on ? "calc(100% - 18px)" : "2px", transition: "left 0.3s ease" }} />
       </button>
@@ -54,7 +54,7 @@ function Settings() {
           {/* Profile */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}
             className="theme-card rounded-2xl p-6">
-            <SectionHeader icon={FaUser} color="#6366f1" title="Profile" subtitle="Your personal information" />
+            <SectionHeader icon={FaUser} color="#7C3AED" title="Profile" subtitle="Your personal information" />
             <div className="grid md:grid-cols-2 gap-4">
               <input className="input-dark" placeholder="Full Name"  defaultValue="Meghana"          readOnly />
               <input className="input-dark" placeholder="Email"      defaultValue="meghana@gmail.com" readOnly />
@@ -133,7 +133,7 @@ function Settings() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
             className="flex justify-end pb-4">
             <button className="flex items-center gap-2.5 px-7 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-85 hover:-translate-y-0.5 transition-all"
-              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 8px 20px rgba(99,102,241,0.30)" }}>
+              style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)", boxShadow: "0 8px 20px rgba(99,102,241,0.30)" }}>
               <FaSave className="text-xs" />Save Settings
             </button>
           </motion.div>

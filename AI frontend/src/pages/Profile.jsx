@@ -11,14 +11,14 @@ import { HiSparkles } from "react-icons/hi2";
 const skills = ["Java","Python","React","JavaScript","SQL","Git","HTML","CSS"];
 
 const achievements = [
-  { icon: FaFileAlt,  color: "#6366f1", label: "Completed React Projects"              },
+  { icon: FaFileAlt,  color: "#7C3AED", label: "Completed React Projects"              },
   { icon: FaTrophy,   color: "#f59e0b", label: "Resume Score Above 85%"                },
   { icon: HiSparkles, color: "#10b981", label: "Completed AI Resume Analysis"          },
   { icon: FaMedal,    color: "#ef4444", label: "Started Placement Preparation Journey" },
 ];
 
 const infoItems = [
-  { icon: FaEnvelope,      color: "#6366f1", label: "meghana@gmail.com" },
+  { icon: FaEnvelope,      color: "#7C3AED", label: "meghana@gmail.com" },
   { icon: FaPhone,         color: "#10b981", label: "+91 XXXXX XXXXX"   },
   { icon: FaGraduationCap, color: "#06b6d4", label: "Vignan University"  },
   { icon: FaMapMarkerAlt,  color: "#ef4444", label: "Andhra Pradesh"    },
@@ -36,7 +36,7 @@ function Profile() {
           className="relative theme-card rounded-2xl p-7 mb-6 overflow-hidden"
           style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.14), rgba(139,92,246,0.08))" }}>
           <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-20 blur-3xl pointer-events-none"
-            style={{ background: "radial-gradient(circle, #6366f1, transparent)" }} />
+            style={{ background: "radial-gradient(circle, #7C3AED, transparent)" }} />
           <div className="absolute top-0 left-0 right-0 h-px"
             style={{ background: "linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent)" }} />
 
@@ -44,7 +44,7 @@ function Profile() {
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               <div className="w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold text-white"
-                style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 0 30px rgba(99,102,241,0.35)" }}>
+                style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)", boxShadow: "0 0 30px rgba(99,102,241,0.35)" }}>
                 M
               </div>
               <div className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center"
@@ -75,7 +75,7 @@ function Profile() {
 
             <div className="flex flex-col gap-2 flex-shrink-0">
               <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-85 transition-opacity"
-                style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+                style={{ background: "linear-gradient(135deg, #7C3AED, #6D28D9)" }}>
                 <FaEdit className="text-xs" />Edit Profile
               </button>
               <div className="flex gap-2">
@@ -99,7 +99,7 @@ function Profile() {
           <div className="space-y-5">
             {[
               {
-                icon: FaFileAlt, color: "#6366f1", title: "Resume Details",
+                icon: FaFileAlt, color: "#7C3AED", title: "Resume Details",
                 rows: [
                   { k: "Resume Score", v: "89%",           c: "var(--color-indigo-text)" },
                   { k: "ATS Score",    v: "91%",           c: "var(--color-green-text)"  },
@@ -154,7 +154,7 @@ function Profile() {
                 Proficiency Overview
               </h3>
               {[
-                { name: "Frontend",  v: 85, color: "#6366f1" },
+                { name: "Frontend",  v: 85, color: "#7C3AED" },
                 { name: "Backend",   v: 65, color: "#10b981" },
                 { name: "Database",  v: 70, color: "#06b6d4" },
                 { name: "DevOps",    v: 25, color: "#f59e0b" },

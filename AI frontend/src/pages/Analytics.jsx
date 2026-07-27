@@ -9,10 +9,10 @@ import {
 } from "recharts";
 
 const stats = [
-  { title: "Resume Score",      value: "89%", icon: FaFileAlt,   color: "#6366f1" },
+  { title: "Resume Score",      value: "89%", icon: FaFileAlt,   color: "#7C3AED" },
   { title: "Skills Mastered",   value: "18",  icon: FaCode,      color: "#10b981" },
   { title: "Mock Interviews",   value: "12",  icon: FaMicrophone,color: "#f59e0b" },
-  { title: "Courses Completed", value: "7",   icon: FaBookOpen,  color: "#8b5cf6" },
+  { title: "Courses Completed", value: "7",   icon: FaBookOpen,  color: "#6D28D9" },
 ];
 
 const progressSkills = [
@@ -125,7 +125,7 @@ function Analytics() {
                 <Bar dataKey="hours" name="Hours" fill="url(#barGrd)" radius={[6,6,0,0]} />
                 <defs>
                   <linearGradient id="barGrd" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" /><stop offset="100%" stopColor="#8b5cf6" />
+                    <stop offset="0%" stopColor="#7C3AED" /><stop offset="100%" stopColor="#6D28D9" />
                   </linearGradient>
                 </defs>
               </BarChart>
@@ -142,16 +142,16 @@ function Analytics() {
               <AreaChart data={monthlyData}>
                 <defs>
                   <linearGradient id="areaGrd" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.28} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.28} />
+                    <stop offset="95%" stopColor="#7C3AED" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
                 <XAxis dataKey="month" tick={{ fill: "var(--chart-tick)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis domain={[60,100]} tick={{ fill: "var(--chart-tick)", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: "rgba(99,102,241,0.25)" }} />
-                <Area type="monotone" dataKey="score" name="Score" stroke="#6366f1" strokeWidth={2}
-                  fill="url(#areaGrd)" dot={{ fill: "#6366f1", r: 4 }} />
+                <Area type="monotone" dataKey="score" name="Score" stroke="#7C3AED" strokeWidth={2}
+                  fill="url(#areaGrd)" dot={{ fill: "#7C3AED", r: 4 }} />
               </AreaChart>
             </ResponsiveContainer>
           </motion.div>
