@@ -12,42 +12,42 @@ function Welcome() {
       className="relative rounded-2xl p-7 mb-8 overflow-hidden"
       style={{
         background:
-          "linear-gradient(135deg, rgba(99,102,241,0.14) 0%, rgba(139,92,246,0.10) 50%, rgba(6,182,212,0.06) 100%)",
-        border: "1px solid var(--border-strong)",
+          "linear-gradient(135deg, rgba(124,58,237,0.16) 0%, rgba(109,40,217,0.10) 50%, rgba(6,182,212,0.06) 100%)",
+        border: "1px solid rgba(124,58,237,0.28)",
       }}
     >
-      {/* background orbs */}
+      {/* Background orbs */}
       <div
         className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-20 blur-3xl pointer-events-none"
-        style={{ background: "radial-gradient(circle, #6366f1, transparent)" }}
+        style={{ background: "radial-gradient(circle, #7C3AED, transparent)" }}
       />
       <div
         className="absolute -bottom-8 left-1/3 w-36 h-36 rounded-full opacity-10 blur-3xl pointer-events-none"
-        style={{ background: "radial-gradient(circle, #8b5cf6, transparent)" }}
+        style={{ background: "radial-gradient(circle, #6D28D9, transparent)" }}
       />
-      {/* top shine */}
+      {/* Top shine */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
         style={{
           background:
-            "linear-gradient(90deg, transparent, rgba(99,102,241,0.5), rgba(139,92,246,0.5), transparent)",
+            "linear-gradient(90deg, transparent, rgba(124,58,237,0.55), rgba(6,182,212,0.40), transparent)",
         }}
       />
 
       <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
         <div>
-          {/* badge */}
+          {/* Badge */}
           <div className="flex items-center gap-2 mb-3">
             <div
               className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
               style={{
-                background: "rgba(99,102,241,0.12)",
-                border:     "1px solid rgba(99,102,241,0.28)",
+                background: "rgba(124,58,237,0.14)",
+                border:     "1px solid rgba(124,58,237,0.30)",
                 color:      "var(--color-indigo-text)",
               }}
             >
               <HiSparkles className="text-xs" />
-              AI-Powered Career Coach
+              AI Career Platform
             </div>
           </div>
 
@@ -57,7 +57,7 @@ function Welcome() {
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
-            Continue your interview preparation and track your progress.
+            Continue your career preparation and track your progress.
             Your resume score improved by{" "}
             <span style={{ color: "var(--color-green-text)" }} className="font-semibold">
               +5%
@@ -65,7 +65,7 @@ function Welcome() {
             this week.
           </p>
 
-          {/* mini stats */}
+          {/* Mini stats */}
           <div className="flex items-center gap-5 mt-4">
             {[
               { label: "Resume Score",   value: "85%",   color: "var(--color-indigo-text)" },
@@ -80,14 +80,14 @@ function Welcome() {
           </div>
         </div>
 
-        {/* action buttons */}
+        {/* Action buttons */}
         <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
           <NavLink to="/resume">
             <button
               className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-85 hover:-translate-y-0.5 transition-all"
               style={{
-                background:  "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                boxShadow:   "0 8px 20px rgba(99,102,241,0.32)",
+                background: "linear-gradient(135deg, #7C3AED, #6D28D9)",
+                boxShadow:  "0 8px 20px rgba(124,58,237,0.35)",
               }}
             >
               <FaRocket className="text-xs" />

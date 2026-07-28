@@ -6,6 +6,7 @@ import ResumeUpload from "../components/ResumeUpload";
 import CompanySelection from "../components/CompanySelection";
 import ResumeAnalysis from "../components/ResumeAnalysis";
 import RequiredSkills from "../components/RequiredSkills";
+import AIResumeSuggestions from "../components/AIResumeSuggestions";
 import ResumeCoachCard from "../components/ResumeCoachCard";
 
 /* ── Skeleton shimmer block ── */
@@ -82,13 +83,18 @@ function Resume() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {/* Two-column: ResumeAnalysis + RequiredSkills */}
+            {/* Row 1 — ATS Analysis + original RequiredSkills (existing) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
               <ResumeAnalysis resumeData={resumeData} />
-              <RequiredSkills resumeData={resumeData} />
+
+              {/* Right col: Required Skills stacked above AI Suggestions */}
+              <div className="flex flex-col gap-6">
+                <RequiredSkills resumeData={resumeData} />
+                <AIResumeSuggestions resumeData={resumeData} />
+              </div>
             </div>
 
-            {/* Full-width AI Coach card below */}
+            {/* Row 2 — Full-width AI Coach card */}
             <div className="mt-6">
               <ResumeCoachCard resumeData={resumeData} />
             </div>

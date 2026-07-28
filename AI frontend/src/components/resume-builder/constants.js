@@ -1,0 +1,127 @@
+export const STORAGE_KEY = "ais-resume-builder";
+
+export const EDITOR_TABS = [
+  { id: "personal", label: "Personal" },
+  { id: "skills", label: "Skills" },
+  { id: "experience", label: "Experience" },
+  { id: "projects", label: "Projects" },
+  { id: "education", label: "Education" },
+];
+
+export const DEFAULT_FORM = {
+  name: "Meghana",
+  title: "Software Engineer",
+  email: "meghana@gmail.com",
+  phone: "+91 XXXXX XXXXX",
+  location: "Hyderabad, India",
+  github: "github.com/meghana",
+  linkedin: "linkedin.com/in/meghana",
+  summary: "",
+  skills: "Python, React, SQL, Git, Node.js",
+  experience: "",
+  projects: "",
+  education: "B.Tech CSE — Vignan University — 2024",
+  certifications: "",
+};
+
+export const TEMPLATES = [
+  {
+    id: "ats-pro",
+    name: "ATS Professional",
+    badge: "Most Popular",
+    badgeColor: "#7C3AED",
+    desc: "Clean, ATS-optimised layout trusted by top companies.",
+    tags: ["ATS-Friendly", "Clean", "2-Column"],
+    accent: "#7C3AED",
+    preview: { bg: "#1E293B", header: "#7C3AED" },
+  },
+  {
+    id: "modern",
+    name: "Modern",
+    badge: "Trending",
+    badgeColor: "#06B6D4",
+    desc: "Bold typography with a modern sidebar design.",
+    tags: ["Sidebar", "Bold", "Colourful"],
+    accent: "#06B6D4",
+    preview: { bg: "#0F172A", header: "#06B6D4" },
+  },
+  {
+    id: "minimal",
+    name: "Minimal",
+    badge: null,
+    badgeColor: null,
+    desc: "Single-column minimal layout — zero distractions.",
+    tags: ["1-Column", "Clean", "Simple"],
+    accent: "#94A3B8",
+    preview: { bg: "#1E293B", header: "#94A3B8" },
+  },
+  {
+    id: "developer",
+    name: "Developer",
+    badge: "New",
+    badgeColor: "#22C55E",
+    desc: "Code-inspired design with GitHub-style skill bars.",
+    tags: ["Tech", "GitHub", "Skills"],
+    accent: "#22C55E",
+    preview: { bg: "#0F172A", header: "#22C55E" },
+  },
+  {
+    id: "corporate",
+    name: "Corporate",
+    badge: null,
+    badgeColor: null,
+    desc: "Traditional corporate layout for enterprise roles.",
+    tags: ["Enterprise", "Formal"],
+    accent: "#3B82F6",
+    preview: { bg: "#1E293B", header: "#3B82F6" },
+  },
+  {
+    id: "student",
+    name: "Student",
+    badge: "Free",
+    badgeColor: "#F59E0B",
+    desc: "Perfect for freshers with strong education emphasis.",
+    tags: ["Fresher", "Education", "Internship"],
+    accent: "#F59E0B",
+    preview: { bg: "#1E293B", header: "#F59E0B" },
+  },
+  {
+    id: "creative",
+    name: "Creative",
+    badge: null,
+    badgeColor: null,
+    desc: "Eye-catching design for design and marketing roles.",
+    tags: ["Creative", "Colourful", "Portfolio"],
+    accent: "#EC4899",
+    preview: { bg: "#0F172A", header: "#EC4899" },
+  },
+  {
+    id: "data-scientist",
+    name: "Data Scientist",
+    badge: "AI Ready",
+    badgeColor: "#A78BFA",
+    desc: "Highlights ML skills, publications, and datasets.",
+    tags: ["ML/AI", "Research", "Publications"],
+    accent: "#A78BFA",
+    preview: { bg: "#0F172A", header: "#A78BFA" },
+  },
+];
+
+export const AI_FEATURES = [
+  { id: "summary", label: "Improve Summary", emoji: "📝", section: "summary" },
+  { id: "projects", label: "Rewrite Projects", emoji: "🛠", section: "projects" },
+  { id: "experience", label: "Rewrite Experience", emoji: "💼", section: "experience" },
+  { id: "skills", label: "Optimise Skills", emoji: "⚡", section: "skills" },
+  { id: "grammar", label: "Grammar Check", emoji: "✏️", section: "summary" },
+  { id: "ats", label: "ATS Suggestions", emoji: "🎯", section: null },
+  { id: "company", label: "Optimise for Company", emoji: "🏢", section: null },
+  { id: "achievements", label: "Generate Achievements", emoji: "🏆", section: "experience" },
+  { id: "certs", label: "Generate Certifications", emoji: "🎓", section: "certifications" },
+  { id: "bullets", label: "Improve Bullet Points", emoji: "🔸", section: "experience" },
+];
+
+export const COMPANIES_LIST = [
+  "Google", "Microsoft", "Amazon", "Apple", "Netflix", "Meta", "Adobe", "Oracle",
+  "IBM", "Salesforce", "Flipkart", "Swiggy", "Zomato", "TCS", "Infosys", "Wipro",
+  "Accenture", "Capgemini", "Cognizant",
+];

@@ -67,16 +67,16 @@ function PhaseIndicator({ currentPhase }) {
                 className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300"
                 style={{
                   background: active
-                    ? "linear-gradient(135deg,#6366f1,#8b5cf6)"
+                    ? "linear-gradient(135deg,#7C3AED,#6D28D9)"
                     : done
-                    ? "rgba(16,185,129,0.15)"
+                    ? "rgba(34,197,94,0.15)"
                     : "var(--bg-surface)",
                   border: active
                     ? "none"
                     : done
-                    ? "1px solid rgba(16,185,129,0.30)"
+                    ? "1px solid rgba(34,197,94,0.30)"
                     : "1px solid var(--border-default)",
-                  boxShadow: active ? "0 4px 14px rgba(99,102,241,0.35)" : "none",
+                  boxShadow: active ? "0 4px 14px rgba(124,58,237,0.38)" : "none",
                 }}
               >
                 <Icon style={{
