@@ -26,6 +26,7 @@ import Sidebar from "../components/Sidebar";
 import Navbar  from "../components/Navbar";
 import companies from "../data/companiesData";
 import { downloadResumePDF } from "../utils/downloadResume";
+import useCompanyRoles from "../hooks/useCompanyRoles";
 
 const API = "http://127.0.0.1:5000";
 
@@ -100,17 +101,6 @@ const INITIAL_FORM = {
   certifications: "",
   achievements:   "",
 };
-
-const COMPANIES = [
-  "Google","Microsoft","Amazon","Apple","Meta","Netflix",
-  "Adobe","Oracle","IBM","Salesforce","TCS","Infosys","Wipro",
-  "Accenture","Capgemini","Cognizant","Flipkart","Razorpay",
-];
-const ROLES = [
-  "Software Engineer","Frontend Developer","Backend Developer",
-  "Full Stack Developer","Data Scientist","Machine Learning Engineer",
-  "DevOps Engineer","Cloud Engineer","Product Manager",
-];
 
 /* ─────────────────────────────────────────────────────────────
    SMALL REUSABLE ATOMS
@@ -488,7 +478,7 @@ function RewriteTab({ form, setField }) {
 
 /* ─────────────────────────────────────────────────────────────
    TAB — Cover Letter Generator
-   Uses companiesData.js for company/role dropdowns.
+   Uses useCompanyRoles hook for dynamic company/role dropdowns.
    Mock generation now, API-ready for POST /generate-cover-letter.
 ───────────────────────────────────────────────────────────── */
 
@@ -545,9 +535,19 @@ ${name}`;
 }
 
 function CoverLetterTab({ form }) {
+  /* ── Dynamic company + role data ── */
+  const {
+    companyList: apiCompanyList,
+    roleList:    availableRoles,
+    company,
+    setCompany,
+    role,
+    setRole,
+    loadingCompanies,
+    loadingRoles,
+  } = useCompanyRoles();
+
   /* ── form state ── */
-  const [company,     setCompany]    = useState("");
-  const [role,        setRole]       = useState("");
   const [tone,        setTone]       = useState("professional");
   const [jobDesc,     setJobDesc]    = useState("");
   const [letter,      setLetter]     = useState("");
@@ -557,15 +557,8 @@ function CoverLetterTab({ form }) {
   const [copied,      setCopied]     = useState(false);
   const [accepted,    setAccepted]   = useState(false);
 
-  /* Derive roles from selected company */
+  /* Company description from companiesData.js (static card info only — not for roles) */
   const companyData = companies.find(c => c.name === company);
-  const availableRoles = companyData?.roles || [];
-
-  /* Auto-set first role when company changes */
-  useEffect(() => {
-    if (availableRoles.length > 0) setRole(availableRoles[0]);
-    else setRole("");
-  }, [company]);
 
   const generate = () => {
     setGenerating(true);
@@ -603,8 +596,7 @@ function CoverLetterTab({ form }) {
 
   const accept = () => { setAccepted(true); setMode("view"); };
 
-  /* ── company list sorted alphabetically ── */
-  const companyList = [...companies].sort((a, b) => a.name.localeCompare(b.name));
+  /* companyList from companiesData.js intentionally removed — apiCompanyList from hook used instead */
 
   return (
     <div>
@@ -638,11 +630,15 @@ function CoverLetterTab({ form }) {
             <div>
               <Label>Company</Label>
               <select className="select-dark text-sm" value={company}
-                onChange={e => setCompany(e.target.value)}>
-                <option value="">— Select Company —</option>
-                {companyList.map(c => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
+                onChange={e => { setCompany(e.target.value); setLetter(""); setEditedLetter(""); }}
+                disabled={loadingCompanies}>
+                {loadingCompanies
+                  ? <option>Loading companies…</option>
+                  : <><option value="">— Select Company —</option>
+                    {apiCompanyList.map(c => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}</>
+                }
               </select>
             </div>
 
@@ -650,10 +646,12 @@ function CoverLetterTab({ form }) {
               <Label>Role</Label>
               <select className="select-dark text-sm" value={role}
                 onChange={e => setRole(e.target.value)}
-                disabled={availableRoles.length === 0}>
-                {availableRoles.length === 0
-                  ? <option>— Select a company first —</option>
-                  : availableRoles.map(r => <option key={r} value={r}>{r}</option>)
+                disabled={loadingRoles || availableRoles.length === 0}>
+                {loadingRoles
+                  ? <option>Loading roles…</option>
+                  : availableRoles.length === 0
+                    ? <option value="">No roles available</option>
+                    : availableRoles.map(r => <option key={r} value={r}>{r}</option>)
                 }
               </select>
             </div>
@@ -888,8 +886,17 @@ function CoverLetterTab({ form }) {
    TAB 4 — Company Optimizer
 ───────────────────────────────────────────────────────────── */
 function OptimizerTab({ form }) {
-  const [company,  setCompany]  = useState("Google");
-  const [role,     setRole]     = useState("Software Engineer");
+  const {
+    companyList,
+    roleList,
+    company,
+    setCompany,
+    role,
+    setRole,
+    loadingCompanies,
+    loadingRoles,
+  } = useCompanyRoles();
+
   const [exp,      setExp]      = useState("Fresher");
   const [loading,  setLoading]  = useState(false);
   const [data,     setData]     = useState(null);
@@ -942,14 +949,26 @@ function OptimizerTab({ form }) {
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="flex-1 min-w-[140px]">
           <Label>Company</Label>
-          <select className="select-dark text-sm" value={company} onChange={e=>setCompany(e.target.value)}>
-            {COMPANIES.map(c=><option key={c}>{c}</option>)}
+          <select className="select-dark text-sm" value={company}
+            onChange={e => { setCompany(e.target.value); setData(null); }}
+            disabled={loadingCompanies}>
+            {loadingCompanies
+              ? <option>Loading…</option>
+              : companyList.map(c => <option key={c.name} value={c.name}>{c.name}</option>)
+            }
           </select>
         </div>
         <div className="flex-1 min-w-[140px]">
           <Label>Role</Label>
-          <select className="select-dark text-sm" value={role} onChange={e=>setRole(e.target.value)}>
-            {ROLES.map(r=><option key={r}>{r}</option>)}
+          <select className="select-dark text-sm" value={role}
+            onChange={e => { setRole(e.target.value); setData(null); }}
+            disabled={loadingRoles}>
+            {loadingRoles
+              ? <option>Loading roles…</option>
+              : roleList.length === 0
+                ? <option value="">No roles available</option>
+                : roleList.map(r => <option key={r} value={r}>{r}</option>)
+            }
           </select>
         </div>
         <div className="flex-1 min-w-[120px]">
@@ -960,8 +979,8 @@ function OptimizerTab({ form }) {
           </select>
         </div>
         <div className="flex items-end">
-          <PurpleBtn onClick={optimize} loading={loading} disabled={loading}>
-            <Target size={13} />🎯 Optimize for {company}
+          <PurpleBtn onClick={optimize} loading={loading} disabled={loading || loadingCompanies || loadingRoles || !company || !role}>
+            <Target size={13} />🎯 Optimize for {company || "…"}
           </PurpleBtn>
         </div>
       </div>

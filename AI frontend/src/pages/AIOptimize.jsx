@@ -8,19 +8,9 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "../components/Sidebar";
 import Navbar  from "../components/Navbar";
+import useCompanyRoles from "../hooks/useCompanyRoles";
 
 const API = "http://127.0.0.1:5000";
-
-const COMPANIES = [
-  "Google","Microsoft","Amazon","Apple","Netflix","Meta","Adobe","Oracle",
-  "IBM","Salesforce","TCS","Infosys","Wipro","Accenture","Capgemini",
-  "Cognizant","Flipkart","Swiggy","Zomato","Razorpay","CRED","Freshworks",
-];
-const ROLES = [
-  "Software Engineer","Frontend Developer","Backend Developer",
-  "Full Stack Developer","Data Scientist","Machine Learning Engineer",
-  "DevOps Engineer","Cloud Engineer","Android Developer",
-];
 
 /* ── Animated bar ─────────────────────────────────────────── */
 function Bar({ value, color, delay = 0 }) {
@@ -105,8 +95,17 @@ function ScoreRing({ value, color, label, size = 96 }) {
    Page export
 ═══════════════════════════════════════════════════════════ */
 export default function AIOptimize() {
-  const [company,  setCompany]  = useState("Google");
-  const [role,     setRole]     = useState("Software Engineer");
+  const {
+    companyList,
+    roleList,
+    company,
+    setCompany,
+    role,
+    setRole,
+    loadingCompanies,
+    loadingRoles,
+  } = useCompanyRoles();
+
   const [loading,  setLoading]  = useState(false);
   const [data,     setData]     = useState(null);
   const [error,    setError]    = useState("");
@@ -160,19 +159,31 @@ export default function AIOptimize() {
           className="theme-card rounded-2xl p-5 mb-6 flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-[160px]">
             <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-faint)" }}>Target Company</label>
-            <select className="select-dark text-sm" value={company} onChange={e=>setCompany(e.target.value)}>
-              {COMPANIES.map(c=><option key={c}>{c}</option>)}
+            <select className="select-dark text-sm" value={company}
+              onChange={e => { setCompany(e.target.value); setData(null); setError(""); }}
+              disabled={loadingCompanies}>
+              {loadingCompanies
+                ? <option>Loading…</option>
+                : companyList.map(c => <option key={c.name} value={c.name}>{c.name}</option>)
+              }
             </select>
           </div>
           <div className="flex-1 min-w-[160px]">
             <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-faint)" }}>Target Role</label>
-            <select className="select-dark text-sm" value={role} onChange={e=>setRole(e.target.value)}>
-              {ROLES.map(r=><option key={r}>{r}</option>)}
+            <select className="select-dark text-sm" value={role}
+              onChange={e => { setRole(e.target.value); setData(null); setError(""); }}
+              disabled={loadingRoles || roleList.length === 0}>
+              {loadingRoles
+                ? <option>Loading roles…</option>
+                : roleList.length === 0
+                  ? <option>Select a company first</option>
+                  : roleList.map(r => <option key={r} value={r}>{r}</option>)
+              }
             </select>
           </div>
           <motion.button
             whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
-            onClick={analyze} disabled={loading}
+            onClick={analyze} disabled={loading || loadingCompanies || !company || !role}
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-55"
             style={{ background:"linear-gradient(135deg,#7C3AED,#6D28D9)", boxShadow:"0 6px 18px rgba(124,58,237,0.35)", flexShrink:0 }}>
             {loading

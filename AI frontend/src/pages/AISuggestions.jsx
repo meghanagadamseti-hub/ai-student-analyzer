@@ -7,18 +7,9 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "../components/Sidebar";
 import Navbar  from "../components/Navbar";
+import useCompanyRoles from "../hooks/useCompanyRoles";
 
 const API = "http://127.0.0.1:5000";
-
-const COMPANIES = [
-  "Google","Microsoft","Amazon","Apple","Meta","Adobe","Netflix",
-  "TCS","Infosys","Wipro","Accenture","Cognizant","Flipkart",
-  "Razorpay","Freshworks","Swiggy","Zomato",
-];
-const ROLES = [
-  "Software Engineer","Frontend Developer","Backend Developer",
-  "Full Stack Developer","Data Scientist","DevOps Engineer",
-];
 
 /* ── Suggestion card with copy/apply ─────────────────────── */
 function SuggestionCard({ section, issue, suggestion, example, index }) {
@@ -120,8 +111,17 @@ function QualityBar({ score, label, color }) {
    Page export
 ═══════════════════════════════════════════════════════════ */
 export default function AISuggestions() {
-  const [company,  setCompany]  = useState("Google");
-  const [role,     setRole]     = useState("Software Engineer");
+  const {
+    companyList,
+    roleList,
+    company,
+    setCompany,
+    role,
+    setRole,
+    loadingCompanies,
+    loadingRoles,
+  } = useCompanyRoles();
+
   const [loading,  setLoading]  = useState(false);
   const [data,     setData]     = useState(null);
   const [error,    setError]    = useState("");
@@ -170,18 +170,30 @@ export default function AISuggestions() {
           className="theme-card rounded-2xl p-5 mb-6 flex flex-wrap items-end gap-4">
           <div className="flex-1 min-w-[150px]">
             <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-faint)" }}>Company</label>
-            <select className="select-dark text-sm" value={company} onChange={e=>setCompany(e.target.value)}>
-              {COMPANIES.map(c=><option key={c}>{c}</option>)}
+            <select className="select-dark text-sm" value={company}
+              onChange={e => { setCompany(e.target.value); setData(null); setError(""); }}
+              disabled={loadingCompanies}>
+              {loadingCompanies
+                ? <option>Loading…</option>
+                : companyList.map(c => <option key={c.name} value={c.name}>{c.name}</option>)
+              }
             </select>
           </div>
           <div className="flex-1 min-w-[150px]">
             <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-faint)" }}>Role</label>
-            <select className="select-dark text-sm" value={role} onChange={e=>setRole(e.target.value)}>
-              {ROLES.map(r=><option key={r}>{r}</option>)}
+            <select className="select-dark text-sm" value={role}
+              onChange={e => { setRole(e.target.value); setData(null); setError(""); }}
+              disabled={loadingRoles || roleList.length === 0}>
+              {loadingRoles
+                ? <option>Loading roles…</option>
+                : roleList.length === 0
+                  ? <option>Select a company first</option>
+                  : roleList.map(r => <option key={r} value={r}>{r}</option>)
+              }
             </select>
           </div>
           <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
-            onClick={analyze} disabled={loading}
+            onClick={analyze} disabled={loading || loadingCompanies || !company || !role}
             className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-55 flex-shrink-0"
             style={{ background:"linear-gradient(135deg,#7C3AED,#6D28D9)", boxShadow:"0 6px 18px rgba(124,58,237,0.32)" }}>
             {loading
@@ -318,7 +330,7 @@ function buildFallback(company, role) {
     company_suggestions: [
       `Tailor your summary to mention ${company}'s engineering culture.`,
       `Add measurable outcomes to every project: users, uptime, performance gains.`,
-      `Include ${company}-relevant keywords: ${role === "Software Engineer" ? "DSA, System Design, OOP" : "React, REST API, SQL"}.`,
+      `Include ${company}-relevant keywords from the required skills for ${role}.`,
       "Push active projects to GitHub — recruiters check profiles.",
       "Add a certifications section to stand out from other candidates.",
     ],

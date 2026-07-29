@@ -1,40 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   FaBrain, FaBuilding, FaCode, FaTachometerAlt,
   FaListOl, FaPlayCircle, FaRobot, FaSpinner,
 } from "react-icons/fa";
 import { HiSparkles } from "react-icons/hi2";
+import useCompanyRoles from "../../hooks/useCompanyRoles";
 
 /* ─── Static option lists ─────────────────────────────────── */
-const COMPANIES = [
-  "Google", "Microsoft", "Amazon", "Apple", "Meta",
-  "Adobe", "Oracle", "Salesforce", "Cisco", "NVIDIA",
-  "Intel", "SAP", "PayPal", "Uber", "LinkedIn",
-  "Atlassian", "Zoom", "TCS", "Infosys", "Wipro",
-  "Accenture", "Cognizant", "Capgemini", "HCLTech",
-  "Tech Mahindra", "IBM", "Razorpay", "CRED",
-  "Freshworks", "Meesho", "Groww", "PhonePe",
-  "Swiggy", "Zomato", "Zerodha", "Postman",
-];
-
-const ROLES = [
-  "Software Engineer",
-  "Frontend Developer",
-  "Backend Developer",
-  "Full Stack Developer",
-  "Data Scientist",
-  "Machine Learning Engineer",
-  "DevOps Engineer",
-  "Cloud Engineer",
-  "Android Developer",
-  "iOS Developer",
-  "Data Analyst",
-  "Product Manager",
-  "QA / Test Engineer",
-  "System Design Engineer",
-  "AI / ML Research Engineer",
-];
 
 const DIFFICULTIES = [
   { value: "Easy",   label: "Easy",   desc: "Core concepts & fundamentals",     color: "#34d399", bg: "rgba(16,185,129,0.10)"  },
@@ -102,8 +75,17 @@ function SummaryChip({ icon: Icon, color, label, value }) {
    InterviewSetup  — main export
 ═══════════════════════════════════════════════════════════ */
 export default function InterviewSetup({ onStart, loading, error }) {
-  const [company,    setCompany]    = useState("Google");
-  const [role,       setRole]       = useState("Software Engineer");
+  const {
+    companyList,
+    roleList,
+    company,
+    setCompany,
+    role,
+    setRole,
+    loadingCompanies,
+    loadingRoles,
+  } = useCompanyRoles();
+
   const [difficulty, setDifficulty] = useState("Medium");
   const [numQ,       setNumQ]       = useState(10);
 
@@ -145,25 +127,51 @@ export default function InterviewSetup({ onStart, loading, error }) {
             {/* Company */}
             <div>
               <FieldLabel icon={FaBuilding} color="var(--color-indigo-text)">Target Company</FieldLabel>
-              <select
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                className="select-dark"
-              >
-                {COMPANIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
+              <div className="relative">
+                <select
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  disabled={loadingCompanies}
+                  className="select-dark"
+                >
+                  {loadingCompanies
+                    ? <option>Loading companies…</option>
+                    : companyList.map((c) => (
+                        <option key={c.name} value={c.name}>{c.name}</option>
+                      ))
+                  }
+                </select>
+                {loadingCompanies && (
+                  <FaSpinner className="animate-spin absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ fontSize: "11px", color: "var(--color-indigo-text)" }} />
+                )}
+              </div>
             </div>
 
             {/* Role */}
             <div>
               <FieldLabel icon={FaCode} color="var(--color-green-text)">Job Role</FieldLabel>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="select-dark"
-              >
-                {ROLES.map((r) => <option key={r}>{r}</option>)}
-              </select>
+              <div className="relative">
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  disabled={loadingRoles}
+                  className="select-dark"
+                >
+                  {loadingRoles
+                    ? <option>Loading roles…</option>
+                    : roleList.length === 0
+                      ? <option value="">No roles available</option>
+                      : roleList.map((r) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))
+                  }
+                </select>
+                {loadingRoles && (
+                  <FaSpinner className="animate-spin absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ fontSize: "11px", color: "var(--color-green-text)" }} />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -236,7 +244,7 @@ export default function InterviewSetup({ onStart, loading, error }) {
         {/* Submit */}
         <motion.button
           type="submit"
-          disabled={loading}
+          disabled={loading || loadingCompanies || loadingRoles || !company || !role}
           whileHover={!loading ? { scale: 1.01 } : {}}
           whileTap={!loading  ? { scale: 0.98 } : {}}
           className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-sm font-bold text-white disabled:opacity-60 disabled:cursor-not-allowed"

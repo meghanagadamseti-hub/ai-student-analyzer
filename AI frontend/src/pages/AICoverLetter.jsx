@@ -7,17 +7,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Sidebar from "../components/Sidebar";
 import Navbar  from "../components/Navbar";
+import useCompanyRoles from "../hooks/useCompanyRoles";
 
-const COMPANIES = [
-  "Google","Microsoft","Amazon","Apple","Netflix","Meta","Adobe","Oracle",
-  "IBM","Salesforce","Flipkart","Swiggy","Zomato","TCS","Infosys","Wipro",
-  "Accenture","Capgemini","Cognizant","Razorpay","CRED","Freshworks",
-];
-const ROLES = [
-  "Software Engineer","Frontend Developer","Backend Developer",
-  "Full Stack Developer","Data Scientist","Machine Learning Engineer",
-  "DevOps Engineer","Product Manager","QA Engineer",
-];
 const TONES = [
   { value:"professional", label:"Professional",  emoji:"💼", desc:"Formal, confident, enterprise-ready" },
   { value:"enthusiastic", label:"Enthusiastic",  emoji:"🔥", desc:"Energetic, passionate, startup-ready" },
@@ -79,8 +70,17 @@ ${name}`;
 }
 
 export default function AICoverLetter() {
-  const [company,    setCompany]    = useState("Google");
-  const [role,       setRole]       = useState("Software Engineer");
+  const {
+    companyList,
+    roleList,
+    company,
+    setCompany,
+    role,
+    setRole,
+    loadingCompanies,
+    loadingRoles,
+  } = useCompanyRoles();
+
   const [tone,       setTone]       = useState("professional");
   const [name,       setName]       = useState("Meghana");
   const [skills,     setSkills]     = useState("Python, React, SQL, Git, Docker");
@@ -163,14 +163,26 @@ export default function AICoverLetter() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-faint)" }}>Company</label>
-                  <select className="select-dark text-sm" value={company} onChange={e=>setCompany(e.target.value)}>
-                    {COMPANIES.map(c => <option key={c}>{c}</option>)}
+                  <select className="select-dark text-sm" value={company}
+                    onChange={e => { setCompany(e.target.value); setLetter(""); }}
+                    disabled={loadingCompanies}>
+                    {loadingCompanies
+                      ? <option>Loading…</option>
+                      : companyList.map(c => <option key={c.name} value={c.name}>{c.name}</option>)
+                    }
                   </select>
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color:"var(--text-faint)" }}>Role</label>
-                  <select className="select-dark text-sm" value={role} onChange={e=>setRole(e.target.value)}>
-                    {ROLES.map(r => <option key={r}>{r}</option>)}
+                  <select className="select-dark text-sm" value={role}
+                    onChange={e => { setRole(e.target.value); setLetter(""); }}
+                    disabled={loadingRoles}>
+                    {loadingRoles
+                      ? <option>Loading roles…</option>
+                      : roleList.length === 0
+                        ? <option value="">No roles available</option>
+                        : roleList.map(r => <option key={r} value={r}>{r}</option>)
+                    }
                   </select>
                 </div>
               </div>
@@ -204,7 +216,7 @@ export default function AICoverLetter() {
               initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.2 }}
               whileHover={{ scale:1.02 }} whileTap={{ scale:0.98 }}
               onClick={generate}
-              disabled={generating}
+              disabled={generating || loadingCompanies || loadingRoles || !company || !role}
               className="w-full py-4 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-3 disabled:opacity-60"
               style={{ background:"linear-gradient(135deg,#7C3AED,#6D28D9)", boxShadow:"0 8px 24px rgba(124,58,237,0.38)" }}>
               {generating
