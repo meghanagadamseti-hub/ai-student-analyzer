@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 
-import Login              from "./pages/Login";
+import Login from "./pages/Login";
 import Dashboard          from "./pages/Dashboard";
 import Resume             from "./pages/Resume";
 import Companies          from "./pages/Companies";
