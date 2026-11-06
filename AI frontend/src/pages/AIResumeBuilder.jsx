@@ -10,8 +10,9 @@
  *  6. Download        — PDF / DOCX / Print / Share
  *
  * Backend used:
- *  POST /rewrite-bullet  (AI Rewrite tab)
- *  POST /resume-coach    (Company Optimizer tab)
+ *  POST /ai/rewrite-section  (AI Rewrite tab — Groq-powered, fresh every click)
+ *  POST /resume-coach        (Company Optimizer tab)
+ *  GET  /ai/resume/current   (loads uploaded resume into form)
  */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,8 +22,7 @@ import {
   Eye, Download, Check, Copy, RefreshCw,
   ChevronDown, ChevronUp, Printer, Share2,
   Loader2, AlertCircle, Mail, Sparkles,
-} from "lucide-react";
-import Sidebar from "../components/Sidebar";
+} from "lucide-react";import Sidebar from "../components/Sidebar";
 import Navbar  from "../components/Navbar";
 import companies from "../data/companiesData";
 import { downloadResumePDF } from "../utils/downloadResume";
@@ -333,141 +333,241 @@ function EditorTab({ form, setField, saved }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────────────
    TAB 3 — AI Rewrite
+   Data flow:
+     originalSections[field]  ← uploaded resume (NEVER overwritten)
+       ↓  always sent to AI
+     POST /ai/rewrite-section → Groq rewrites the ORIGINAL
+       ↓
+     aiVersions[field].aiText ← latest AI output (replaced on Regenerate)
+       ↓  Accept
+     form[field]              ← user's current accepted/edited version
+   Regenerate: always sends originalSections[field], not previous AI output.
 ───────────────────────────────────────────────────────────── */
 const REWRITE_SECTIONS = [
-  { id:"summary",    label:"Summary",    emoji:"📝", field:"summary"    },
-  { id:"experience", label:"Experience", emoji:"💼", field:"experience" },
-  { id:"projects",   label:"Projects",   emoji:"🛠", field:"projects"   },
-  { id:"skills",     label:"Skills",     emoji:"⚡", field:"skills"     },
-  { id:"achievements",label:"Achievements",emoji:"🏆",field:"achievements"},
+  { id:"summary",     label:"Summary",     emoji:"📝", field:"summary"     },
+  { id:"experience",  label:"Experience",  emoji:"💼", field:"experience"  },
+  { id:"projects",    label:"Projects",    emoji:"🛠",  field:"projects"    },
+  { id:"skills",      label:"Skills",      emoji:"⚡",  field:"skills"      },
+  { id:"achievements",label:"Achievements",emoji:"🏆", field:"achievements"},
 ];
 
-function generateRewrite(field, form) {
-  const skills = form.skills || "Python, React, SQL";
-  const name   = form.name   || "the candidate";
-  switch (field) {
-    case "summary":
-      return `Results-driven Software Engineer with expertise in ${skills}. Passionate about building scalable, user-centric applications that deliver measurable business impact. Seeking to leverage technical skills and problem-solving abilities at a leading technology company.`;
-    case "experience":
-      return `• Engineered ${skills.split(",")[0]?.trim()||"React"} features adopted by 500+ enterprise clients, increasing user retention by 28%.\n• Collaborated across cross-functional teams to deliver 15+ sprint features on schedule with zero critical bugs.\n• Reduced deployment time by 50% by implementing CI/CD pipeline using GitHub Actions and Docker.`;
-    case "projects":
-      return `• Resume Analyzer Platform | React, Flask, Python, PostgreSQL\n  Built AI-powered resume analysis tool serving 1,000+ daily active users with 99.9% uptime.\n\n• E-Commerce API | Node.js, MongoDB, Redis, AWS\n  Designed REST API handling 50,000+ daily requests with sub-100ms latency.`;
-    case "skills":
-      return `${skills}, Git, Linux, REST APIs, Docker, AWS, System Design, DSA, Agile, JIRA, PostgreSQL`;
-    case "achievements":
-      return `• Ranked in top 5% of 10,000+ participants in national coding competition.\n• Delivered 3 production features in first month — recognised by engineering manager.\n• Reduced bug count by 60% after introducing automated testing framework.`;
-    default:
-      return `Improved version of ${field} section.`;
-  }
+function RewriteToast({ msg, type }) {
+  if (!msg) return null;
+  const isErr = type === "error";
+  return (
+    <motion.div initial={{ opacity:0, y:-8 }} animate={{ opacity:1, y:0 }}
+      exit={{ opacity:0, y:-8 }} transition={{ duration:0.22 }}
+      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold mb-4"
+      style={{
+        background: isErr ? "rgba(239,68,68,0.10)" : "rgba(34,197,94,0.10)",
+        border: `1px solid ${isErr ? "rgba(239,68,68,0.30)" : "rgba(34,197,94,0.30)"}`,
+        color:  isErr ? "var(--color-red-text)" : "var(--color-green-text)",
+      }}>
+      {isErr ? "⚠️" : "✨"} {msg}
+    </motion.div>
+  );
 }
 
-function RewriteTab({ form, setField }) {
-  const [states, setStates] = useState({}); // { fieldId: { loading, rewritten, error, expanded } }
+function RewriteTab({ form, setField, originalSections, setOriginalSections }) {
+  const [aiVersions, setAiVersions] = useState({});
+  const [toast,      setToast]      = useState({ msg:"", type:"success" });
+  const toastTimer = useRef(null);
+  const { company, role } = useCompanyRoles();
 
+  const showToast = (msg, type = "success") => {
+    clearTimeout(toastTimer.current);
+    setToast({ msg, type });
+    toastTimer.current = setTimeout(() => setToast({ msg:"", type:"success" }), 3500);
+  };
+
+  // ALWAYS uses originalSections[field] — never form[field] or previous AI output
   const run = async (field) => {
-    setStates(s => ({ ...s, [field]:{ loading:true, rewritten:"", error:"", expanded:true } }));
-    // Try backend, fall back to local generation
+    const uploadedOriginal = (originalSections && originalSections[field]) || form[field] || "";
+    console.log(`[AI Rewrite] → "${field}" | original chars: ${uploadedOriginal.length} | ts: ${Date.now()}`);
+    setAiVersions(v => ({ ...v, [field]: { ...v[field], loading:true, aiText:"", error:"" } }));
+    const payload = {
+      section:               field,
+      current_text:          uploadedOriginal,   // original uploaded section
+      original_uploaded_text:uploadedOriginal,
+      company:               company || "",
+      role:                  role    || "",
+      experience:            "Fresher",
+      timestamp:             Date.now(),
+      regenerate:            true,
+    };
     try {
-      const res = await fetch(`${API}/rewrite-bullet`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ original: form[field] || `My ${field} section`, company:"", role:"" }),
+      const res = await fetch(`${API}/ai/rewrite-section`, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Cache-Control":"no-store", "Pragma":"no-cache" },
+        cache:"no-store",
+        body:JSON.stringify(payload),
       });
-      const data = await res.json();
-      const result = data.rewritten || generateRewrite(field, form);
-      setStates(s => ({ ...s, [field]:{ loading:false, rewritten:result, error:"", expanded:true } }));
-    } catch {
-      const result = generateRewrite(field, form);
-      setStates(s => ({ ...s, [field]:{ loading:false, rewritten:result, error:"", expanded:true } }));
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `HTTP ${res.status}`); }
+      const data    = await res.json();
+      const newText = data.rewritten || "";
+      console.log(`[AI Rewrite] ← "${field}" | groq:${data.groq_powered} | chars:${newText.length}`);
+      setAiVersions(v => ({ ...v, [field]:{ loading:false, aiText:newText, animKey:Date.now(), error:"", accepted:false, editing:false, isGroq:data.groq_powered!==false } }));
+      showToast(data.groq_powered===false ? "Rewritten (offline mode)" : "✨ Rewritten by Groq AI");
+    } catch(err) {
+      console.error(`[AI Rewrite] Error "${field}":`, err.message);
+      setAiVersions(v => ({ ...v, [field]:{ ...v[field], loading:false, error:err.message } }));
+      showToast(`Failed to rewrite "${field}". Try again.`, "error");
     }
   };
 
-  const apply = (field, text) => {
-    setField(field, text);
-    setStates(s => ({ ...s, [field]:{ ...s[field], applied:true } }));
+  const accept  = (field) => {
+    const t = aiVersions[field]?.aiText || "";
+    if (!t) return;
+    setField(field, t);
+    setAiVersions(v => ({ ...v, [field]:{ ...v[field], accepted:true } }));
+    showToast(`"${field}" accepted`);
   };
+  const reject      = (field) => setAiVersions(v => ({ ...v, [field]:{ ...v[field], accepted:false } }));
+  const toggleEdit  = (field) => setAiVersions(v => ({ ...v, [field]:{ ...v[field], editing:!v[field]?.editing } }));
+  const restoreOrig = (field) => {
+    const orig = (originalSections && originalSections[field]) || "";
+    if (!orig) { showToast("No uploaded original to restore", "error"); return; }
+    setField(field, orig);
+    setAiVersions(v => ({ ...v, [field]:{ ...v[field], accepted:false } }));
+    showToast(`"${field}" restored to uploaded original`);
+  };
+
+  const hasUpload = originalSections && Object.values(originalSections).some(Boolean);
 
   return (
     <div>
-      <div className="mb-5">
+      <div className="mb-4">
         <h2 className="text-lg font-bold" style={{ color:"var(--text-primary)" }}>AI Rewrite</h2>
         <p className="text-sm mt-0.5" style={{ color:"var(--text-faint)" }}>
-          Click any section to generate an AI-improved version. Compare before/after.
+          AI rewrites your <strong>uploaded resume</strong> — never starts from scratch.
+          Regenerate always re-uses your original uploaded content.
+          {company && role && <span style={{ color:"#A78BFA" }}> Targeting <strong>{company}</strong> · <strong>{role}</strong></span>}
         </p>
       </div>
 
-      <div className="space-y-4">
+      {!hasUpload && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl mb-5 text-sm"
+          style={{ background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.25)", color:"var(--color-yellow-text)" }}>
+          <span className="text-base mt-0.5">⚠️</span>
+          <div>
+            <p className="font-semibold">No uploaded resume detected</p>
+            <p className="text-xs mt-0.5 opacity-80">Upload your PDF/DOCX on the Resume page — AI Rewrite will then improve your actual content instead of generating generic text.</p>
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence mode="wait">
+        {toast.msg && <RewriteToast key={toast.msg} msg={toast.msg} type={toast.type} />}
+      </AnimatePresence>
+
+      <div className="space-y-5">
         {REWRITE_SECTIONS.map(({ id, label, emoji, field }) => {
-          const st = states[field] || {};
+          const ai           = aiVersions[field] || {};
+          const uploadedText = (originalSections && originalSections[field]) || "";
+          const formText     = form[field] || "";
+
           return (
             <div key={id} className="rounded-2xl overflow-hidden"
-              style={{ border:"1px solid var(--border-default)" }}>
+              style={{ border:`1px solid ${ai.accepted ? "rgba(34,197,94,0.35)" : "var(--border-default)"}` }}>
+
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3"
                 style={{ background:"var(--bg-surface)", borderBottom:"1px solid var(--border-subtle)" }}>
                 <div className="flex items-center gap-2">
                   <span className="text-base">{emoji}</span>
                   <span className="text-sm font-semibold" style={{ color:"var(--text-primary)" }}>{label}</span>
+                  {ai.accepted && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background:"rgba(34,197,94,0.15)", color:"var(--color-green-text)" }}>✓ Accepted</span>}
+                  {ai.isGroq===true  && ai.aiText && !ai.accepted && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background:"rgba(124,58,237,0.12)", color:"#A78BFA" }}>⚡ Groq</span>}
+                  {ai.isGroq===false && ai.aiText && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background:"rgba(245,158,11,0.12)", color:"var(--color-yellow-text)" }}>offline</span>}
                 </div>
-                <button
-                  onClick={() => run(field)}
-                  disabled={st.loading}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white disabled:opacity-55"
+                <button onClick={() => run(field)} disabled={ai.loading}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white disabled:opacity-55 hover:opacity-85"
                   style={{ background:"linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
-                  {st.loading
-                    ? <><Loader2 size={11} className="animate-spin"/>Rewriting…</>
-                    : <><Wand2 size={11}/>✨ Rewrite with AI</>
-                  }
+                  {ai.loading
+                    ? <><Loader2 size={11} className="animate-spin"/>⏳ Rewriting…</>
+                    : ai.aiText
+                      ? <><RefreshCw size={11}/>🔄 Regenerate</>
+                      : <><Wand2    size={11}/>✨ Rewrite with AI</>}
                 </button>
               </div>
 
-              {/* Before / After */}
-              <AnimatePresence>
-                {(st.rewritten || form[field]) && (
-                  <motion.div initial={{ height:0,opacity:0 }} animate={{ height:"auto",opacity:1 }}
-                    exit={{ height:0,opacity:0 }} className="overflow-hidden">
-                    <div className="grid grid-cols-1 md:grid-cols-2 divide-x"
-                      style={{ borderColor:"var(--border-subtle)" }}>
-                      {/* Before */}
-                      <div className="p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-wider mb-2"
-                          style={{ color:"var(--color-red-text)" }}>Before</p>
-                        <p className="text-xs leading-relaxed whitespace-pre-wrap"
-                          style={{ color:"var(--text-muted)" }}>
-                          {form[field] || <span style={{ color:"var(--text-faint)",fontStyle:"italic" }}>Empty — add content in the Editor tab</span>}
-                        </p>
-                      </div>
-                      {/* After */}
-                      {st.rewritten && (
-                        <div className="p-4" style={{ background:"rgba(34,197,94,0.03)" }}>
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-[10px] font-bold uppercase tracking-wider"
-                              style={{ color:"var(--color-green-text)" }}>
-                              ✨ AI Version
-                            </p>
-                            <div className="flex gap-2">
-                              <button onClick={() => { navigator.clipboard.writeText(st.rewritten).catch(()=>{}); }}
-                                className="text-[10px] px-2 py-0.5 rounded font-semibold hover:opacity-75"
-                                style={{ background:"rgba(124,58,237,0.12)", color:"#A78BFA" }}>
-                                Copy
-                              </button>
-                              <button onClick={() => apply(field, st.rewritten)}
-                                className="text-[10px] px-2 py-0.5 rounded font-semibold hover:opacity-75"
-                                style={{ background:"rgba(34,197,94,0.12)", color:"var(--color-green-text)" }}>
-                                {st.applied ? "✓ Applied" : "Apply"}
-                              </button>
-                            </div>
-                          </div>
-                          <p className="text-xs leading-relaxed whitespace-pre-wrap"
-                            style={{ color:"var(--text-primary)" }}>
-                            {st.rewritten}
-                          </p>
-                        </div>
-                      )}
+              {/* Two columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x"
+                style={{ borderColor:"var(--border-subtle)" }}>
+
+                {/* LEFT — Original uploaded resume (immutable display) */}
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color:"var(--color-red-text)" }}>📄 Original Uploaded Resume</p>
+                    {ai.accepted && (
+                      <button onClick={() => restoreOrig(field)}
+                        className="text-[10px] px-2 py-0.5 rounded font-semibold hover:opacity-75"
+                        style={{ background:"rgba(239,68,68,0.10)", color:"var(--color-red-text)" }}>
+                        ↩ Restore
+                      </button>
+                    )}
+                  </div>
+                  {uploadedText
+                    ? <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color:"var(--text-muted)" }}>{uploadedText}</p>
+                    : <p className="text-xs italic" style={{ color:"var(--text-faint)" }}>Not found in uploaded resume. Add content in Editor tab — AI will use that.</p>
+                  }
+                </div>
+
+                {/* RIGHT — AI version */}
+                <div className="p-4" style={{ background:"rgba(34,197,94,0.020)" }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color:"var(--color-green-text)" }}>✨ AI Rewritten Version</p>
+
+                  {ai.loading && (
+                    <div className="flex items-center justify-center gap-2 py-6">
+                      <Loader2 size={16} className="animate-spin" style={{ color:"#7C3AED" }}/>
+                      <span className="text-xs" style={{ color:"var(--text-muted)" }}>Groq AI is rewriting your uploaded content…</span>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  )}
+                  {ai.error && !ai.loading && <p className="text-xs mb-3" style={{ color:"var(--color-red-text)" }}>⚠️ {ai.error}</p>}
+
+                  <AnimatePresence mode="wait">
+                    {!ai.loading && ai.aiText && (
+                      <motion.div key={ai.animKey}
+                        initial={{ opacity:0, y:8, backgroundColor:"rgba(34,197,94,0.14)" }}
+                        animate={{ opacity:1, y:0, backgroundColor:"rgba(34,197,94,0.00)" }}
+                        transition={{ duration:0.35 }}>
+
+                        <p className="text-xs leading-relaxed whitespace-pre-wrap mb-3" style={{ color:"var(--text-primary)" }}>
+                          {ai.aiText}
+                        </p>
+
+                        <div className="flex flex-wrap gap-2">
+                          {!ai.accepted
+                            ? <button onClick={() => accept(field)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ background:"linear-gradient(135deg,#22C55E,#16A34A)" }}><Check size={10}/> Accept Changes</button>
+                            : <button onClick={() => reject(field)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background:"rgba(239,68,68,0.10)", border:"1px solid rgba(239,68,68,0.22)", color:"var(--color-red-text)" }}>↩ Undo Accept</button>
+                          }
+                          <button onClick={() => toggleEdit(field)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-75" style={{ background:"rgba(245,158,11,0.10)", border:"1px solid rgba(245,158,11,0.22)", color:"var(--color-yellow-text)" }}>
+                            ✏️ {ai.editing ? "Done" : "Edit Manually"}
+                          </button>
+                          <button onClick={() => { navigator.clipboard.writeText(ai.aiText).catch(()=>{}); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-75" style={{ background:"rgba(124,58,237,0.10)", color:"#A78BFA" }}>Copy</button>
+                          <button onClick={() => run(field)} disabled={ai.loading} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold hover:opacity-75 disabled:opacity-40" style={{ background:"rgba(6,182,212,0.10)", color:"#06B6D4" }}>
+                            <RefreshCw size={10}/> Regenerate
+                          </button>
+                        </div>
+
+                        {ai.editing && (
+                          <motion.div initial={{ height:0, opacity:0 }} animate={{ height:"auto", opacity:1 }} transition={{ duration:0.22 }} className="overflow-hidden mt-3">
+                            <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color:"var(--text-faint)" }}>✏️ Manual Edit (editing your accepted version)</p>
+                            <textarea rows={5} value={formText} onChange={e => setField(field, e.target.value)}
+                              className="input-dark text-xs resize-none w-full" style={{ lineHeight:"1.7", borderRadius:"10px" }} placeholder="Edit manually…" />
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {!ai.loading && !ai.aiText && !ai.error && (
+                    <p className="text-xs italic" style={{ color:"var(--text-faint)" }}>Click "Rewrite with AI" → AI improves your uploaded section →</p>
+                  )}
+                </div>
+              </div>
             </div>
           );
         })}
@@ -1296,58 +1396,13 @@ function DownloadTab({ tpl, form }) {
 ───────────────────────────────────────────────────────────── */
 /* ─────────────────────────────────────────────────────────────
    ImproveTab — AI Enhancement Editor
-   Loaded automatically when coming from "Apply All".
-   Shows Before/After comparison for every resume section.
-   Tracks accept/reject decisions, then generates final resume.
+   - On mount: loads uploaded resume sections from GET /ai/resume/current
+   - Calls POST /ai/rewrite-section (Groq) per section — never mockImprove
+   - Two-column: Original (from uploaded resume) | AI Improved (editable)
+   - Per-section Accept / Reject / Rewrite (fresh Groq call)
+   - "Apply All" writes accepted sections into form
+   - Never overwrites originalResume state
 ───────────────────────────────────────────────────────────── */
-
-/* ── Mock AI improvements keyed by section ── */
-function mockImprove(section, current, missingSkills, company, role) {
-  const mis = missingSkills.slice(0, 3).join(", ") || "SQL, Docker, AWS";
-  const co  = company || "your target company";
-  const ro  = role    || "Software Engineer";
-  switch (section) {
-    case "summary":
-      return current
-        ? `Results-driven ${ro} with expertise in ${current.slice(0, 40).trim()}…
-Passionate about building scalable systems that deliver measurable impact.
-Seeking to apply technical skills and AI-driven solutions at ${co}.`
-        : `Motivated ${ro} skilled in Python, React, and SQL.
-Experienced in building full-stack applications with measurable outcomes.
-Eager to contribute to ${co}'s engineering mission.`;
-
-    case "skills":
-      return current
-        ? `${current}, ${mis}`
-        : mis;
-
-    case "experience":
-      return current
-        ? current
-            .replace(/worked on/gi, "Engineered")
-            .replace(/helped with/gi, "Contributed to")
-            .replace(/built/gi, "Developed and deployed")
-            .replace(/did/gi, "Delivered")
-        : `• Engineered REST APIs using Python + Flask serving 10,000+ requests/day with 99.9% uptime.\n• Collaborated with 5-person agile team to deliver 12 sprint features on schedule.\n• Reduced deployment time by 40% by implementing CI/CD pipeline using GitHub Actions.`;
-
-    case "projects":
-      return current
-        ? current
-            .replace(/created/gi, "Architected")
-            .replace(/made/gi, "Built and deployed")
-            .replace(/a website/gi, "a full-stack web application")
-        : `• AI Resume Analyzer | React, Flask, Python, PostgreSQL\n  Built AI-powered resume scoring tool achieving 92% ATS match for 500+ users.\n• E-Commerce Platform | Node.js, MongoDB, Redis\n  Designed REST API handling 50,000+ daily requests with sub-100ms latency.`;
-
-    case "education":
-      return current || "B.Tech Computer Science — University — 2024 — 8.2 CGPA";
-
-    case "certifications":
-      return `• AWS Certified Cloud Practitioner\n• Google Data Analytics Certificate\n• Meta Front-End Developer Certificate`;
-
-    default:
-      return current || "";
-  }
-}
 
 /* ── Before/After comparison card ── */
 function CompareCard({ section, label, emoji, original, improved, decision, onAccept, onReject, onEdit, onRegenerate, editValue, onEditChange, isGenerating }) {
@@ -1536,174 +1591,365 @@ function SuccessScreen({ atsScore, decisions, onDownload, onCoverLetter }) {
 function ImproveTab({ form, setField, resumeData, atsScore, missingSkills, matchedSkills, company, role, actions, accent, onDone }) {
   const SECTIONS = [
     { key:"summary",        label:"Summary",        emoji:"✏️" },
-    { key:"skills",         label:"Skills",         emoji:"⚡" },
     { key:"experience",     label:"Experience",     emoji:"💼" },
     { key:"projects",       label:"Projects",       emoji:"📂" },
-    { key:"education",      label:"Education",      emoji:"🎓" },
-    { key:"certifications", label:"Certifications", emoji:"🏆" },
+    { key:"skills",         label:"Skills",         emoji:"⚡" },
+    { key:"achievements",   label:"Achievements",   emoji:"🏆" },
+    { key:"certifications", label:"Certifications", emoji:"📜" },
   ];
 
-  /* Pre-generate improved versions */
-  const [improved,   setImproved]   = useState(() =>
-    Object.fromEntries(SECTIONS.map(s => [
-      s.key,
-      mockImprove(s.key, form[s.key], missingSkills, company, role),
-    ]))
+  // originalResume = from uploaded resume (NEVER overwritten by AI)
+  // improvedResume = Groq AI output per section
+  // editedResume   = user-edited version of AI output
+  const [originalResume, setOriginalResume] = useState({});
+  const [improvedResume, setImprovedResume] = useState({});
+  const [editedResume,   setEditedResume]   = useState({});
+  const [decisions,      setDecisions]      = useState(
+    Object.fromEntries(SECTIONS.map(s => [s.key, "pending"]))
   );
-  const [decisions,  setDecisions]  = useState(() =>
-    Object.fromEntries(SECTIONS.map(s => [s.key, { status:"pending", content: improved[s.key] }]))
-  );
-  const [generating, setGenerating] = useState({});
-  const [phase,      setPhase]      = useState("review"); // "review" | "confirm" | "done"
-  const [finalizing, setFinalizing] = useState(false);
+  const [generating,   setGenerating]   = useState({});
+  const [loadingResume,setLoadingResume] = useState(true);
+  const [loadingAll,   setLoadingAll]   = useState(false);
+  const [phase,        setPhase]        = useState("review");
+  const [finalizing,   setFinalizing]   = useState(false);
+  const [groqStatus,   setGroqStatus]   = useState(null);
+  const [toast,        setToast]        = useState("");
+  const toastRef = useRef(null);
 
-  const setDecision = (key, status) =>
-    setDecisions(d => ({ ...d, [key]: { status, content: improved[key] } }));
-
-  const regenerate = (key) => {
-    setGenerating(g => ({ ...g, [key]:true }));
-    setTimeout(() => {
-      const newText = mockImprove(key, form[key], missingSkills, company, role) + "\n(Regenerated version)";
-      setImproved(v => ({ ...v, [key]:newText }));
-      setDecisions(d => ({ ...d, [key]:{ status:"pending", content:newText } }));
-      setGenerating(g => ({ ...g, [key]:false }));
-    }, 800);
+  const showToast = (msg) => {
+    clearTimeout(toastRef.current);
+    setToast(msg);
+    toastRef.current = setTimeout(() => setToast(""), 3500);
   };
 
-  const updateEdit = (key, val) => {
-    setImproved(v => ({ ...v, [key]:val }));
-    setDecisions(d => ({ ...d, [key]:{ ...d[key], content:val } }));
+  // On mount: load uploaded resume sections from backend
+  useEffect(() => {
+    setLoadingResume(true);
+    fetch(`${API}/ai/status`).then(r=>r.json()).then(d=>setGroqStatus(d)).catch(()=>setGroqStatus({configured:false}));
+    fetch(`${API}/ai/resume/current`)
+      .then(r => r.json())
+      .then(data => {
+        const src = (data.available && data.sections) ? data.sections : {};
+        const orig = {};
+        SECTIONS.forEach(({ key }) => { orig[key] = src[key] || form[key] || ""; });
+        setOriginalResume(orig);
+        // Populate form fields from real resume if empty
+        SECTIONS.forEach(({ key }) => { if (orig[key] && !form[key]) setField(key, orig[key]); });
+      })
+      .catch(() => {
+        const orig = {};
+        SECTIONS.forEach(({ key }) => { orig[key] = form[key] || ""; });
+        setOriginalResume(orig);
+      })
+      .finally(() => setLoadingResume(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Rewrite ONE section via /ai/rewrite-section — fresh every call
+  const rewriteSection = async (key) => {
+    setGenerating(g => ({ ...g, [key]: true }));
+    try {
+      const res = await fetch(`${API}/ai/rewrite-section`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+        body: JSON.stringify({
+          section: key, current_text: originalResume[key] || form[key] || "",
+          company: company || "", role: role || "", experience: "Fresher",
+          timestamp: Date.now(), regenerate: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Rewrite failed");
+      const txt = data.rewritten || "";
+      setImprovedResume(v => ({ ...v, [key]: txt }));
+      setEditedResume(v => ({ ...v, [key]: txt }));
+      setDecisions(d => ({ ...d, [key]: "pending" }));
+      showToast(`✨ ${key} rewritten${data.groq_powered ? " by Groq AI" : " (offline mode)"}`);
+    } catch (err) {
+      showToast(`⚠️ ${key}: ${err.message}`);
+    } finally {
+      setGenerating(g => ({ ...g, [key]: false }));
+    }
   };
 
-  const acceptedCount = Object.values(decisions).filter(d => d.status === "accepted").length;
-  const rejectedCount = Object.values(decisions).filter(d => d.status === "rejected").length;
+  // Generate ALL sections concurrently
+  const generateAll = async () => {
+    setLoadingAll(true);
+    showToast("⏳ Generating AI improvements for all sections…");
+    await Promise.all(SECTIONS.map(s => rewriteSection(s.key)));
+    setLoadingAll(false);
+    showToast("✅ All sections generated — review and accept below");
+  };
+
+  const accept = (key) => setDecisions(d => ({ ...d, [key]: "accepted" }));
+  const reject = (key) => setDecisions(d => ({ ...d, [key]: "rejected" }));
+  const undo   = (key) => setDecisions(d => ({ ...d, [key]: "pending"  }));
+
+  const acceptedCount = Object.values(decisions).filter(v => v === "accepted").length;
+  const rejectedCount = Object.values(decisions).filter(v => v === "rejected").length;
   const pendingCount  = SECTIONS.length - acceptedCount - rejectedCount;
 
+  // Apply accepted sections to form and navigate to done
   const handleGenerate = () => {
     setFinalizing(true);
     setTimeout(() => {
-      /* Apply accepted changes to form */
-      Object.entries(decisions).forEach(([key, val]) => {
-        if (val.status === "accepted") setField(key, val.content);
+      SECTIONS.forEach(({ key }) => {
+        if (decisions[key] === "accepted")
+          setField(key, editedResume[key] || improvedResume[key] || "");
       });
       setFinalizing(false);
       setPhase("done");
-    }, 1800);
+    }, 800);
   };
 
   if (phase === "done") {
     return (
       <SuccessScreen
         atsScore={atsScore}
-        decisions={decisions}
+        decisions={Object.fromEntries(SECTIONS.map(s => [s.key, { status: decisions[s.key] }]))}
         onDownload={() => downloadResumePDF(form, accent || "#7C3AED")}
         onCoverLetter={onDone}
       />
     );
   }
 
+  if (loadingResume) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
+            style={{ borderColor:"#7C3AED", borderTopColor:"transparent" }} />
+          <span className="text-sm" style={{ color:"var(--text-muted)" }}>Loading your uploaded resume…</span>
+        </div>
+        {SECTIONS.map(s => (
+          <div key={s.key} className="rounded-2xl h-28"
+            style={{ background:"var(--bg-surface)", border:"1px solid var(--border-default)", opacity:0.5 }} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="text-lg font-bold" style={{ color:"var(--text-primary)" }}>
             AI Resume Improvement Plan
           </h2>
           <p className="text-sm mt-0.5" style={{ color:"var(--text-faint)" }}>
-            {company && role ? `Optimising for ${company} · ${role}` : "Review each AI improvement and accept or reject it."}
+            {company && role
+              ? `Improving your resume for ${company} · ${role}`
+              : "Upload a resume and run the analysis to get AI improvements."}
           </p>
         </div>
-        {/* Progress chips */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background:"rgba(34,197,94,0.12)", color:"var(--color-green-text)" }}>
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
+            style={{ background:"rgba(34,197,94,0.12)", color:"var(--color-green-text)" }}>
             ✓ {acceptedCount} accepted
           </span>
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background:"rgba(245,158,11,0.12)", color:"var(--color-yellow-text)" }}>
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg"
+            style={{ background:"rgba(245,158,11,0.12)", color:"var(--color-yellow-text)" }}>
             ⏳ {pendingCount} pending
           </span>
-          {rejectedCount > 0 && (
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background:"rgba(239,68,68,0.10)", color:"var(--color-red-text)" }}>
-              ✗ {rejectedCount} rejected
-            </span>
-          )}
         </div>
       </div>
 
-      {/* Quick actions bar */}
-      <div className="flex flex-wrap gap-2 mb-5 pb-5" style={{ borderBottom:"1px solid var(--border-default)" }}>
-        <button
-          onClick={() => SECTIONS.forEach(s => setDecision(s.key, "accepted"))}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white transition-all hover:opacity-85"
-          style={{ background:"linear-gradient(135deg,#22C55E,#16A34A)" }}>
-          <Check size={11} /> Accept All
+      {/* Toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div key={toast}
+            initial={{ opacity:0, y:-6 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold mb-4"
+            style={{ background:"rgba(124,58,237,0.10)", border:"1px solid rgba(124,58,237,0.25)", color:"#A78BFA" }}>
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Groq status banner */}
+      {groqStatus && !groqStatus.configured && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl mb-4 text-xs"
+          style={{ background:"rgba(245,158,11,0.08)", border:"1px solid rgba(245,158,11,0.25)", color:"var(--color-yellow-text)" }}>
+          <Loader2 size={12} />
+          <span>
+            <strong>Offline mode:</strong> Add <code>GROQ_API_KEY</code> to <code>backend/.env</code> for Groq-powered rewrites.
+            Rule-based improvements are shown below.
+          </span>
+        </div>
+      )}
+
+      {/* Action bar */}
+      <div className="flex flex-wrap gap-2 mb-5 pb-4" style={{ borderBottom:"1px solid var(--border-default)" }}>
+        <button onClick={generateAll} disabled={loadingAll}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-55"
+          style={{ background:"linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
+          {loadingAll
+            ? <><Loader2 size={11} className="animate-spin"/>Generating all sections…</>
+            : <><Sparkles size={11}/>⚡ Generate All AI Improvements</>
+          }
         </button>
-        <button
-          onClick={() => SECTIONS.forEach(s => setDecision(s.key, "pending"))}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-75"
+        <button onClick={() => SECTIONS.forEach(s => accept(s.key))}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white"
+          style={{ background:"linear-gradient(135deg,#22C55E,#16A34A)" }}>
+          <Check size={11}/> Accept All
+        </button>
+        <button onClick={() => SECTIONS.forEach(s => undo(s.key))}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold"
           style={{ background:"rgba(245,158,11,0.10)", border:"1px solid rgba(245,158,11,0.25)", color:"var(--color-yellow-text)" }}>
           ↩ Reset All
         </button>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs" style={{ color:"var(--text-faint)" }}>
-            {SECTIONS.length - pendingCount} / {SECTIONS.length} reviewed
+            {acceptedCount + rejectedCount} / {SECTIONS.length} reviewed
           </span>
-          {/* Overall progress bar */}
           <div className="w-28 h-2 rounded-full overflow-hidden" style={{ background:"var(--border-subtle)" }}>
-            <div className="h-2 rounded-full" style={{
-              width:`${((SECTIONS.length - pendingCount) / SECTIONS.length) * 100}%`,
-              background:"linear-gradient(90deg,#7C3AED,#22C55E)",
-              transition:"width 0.4s ease",
-            }}/>
+            <motion.div className="h-2 rounded-full"
+              style={{ background:"linear-gradient(90deg,#7C3AED,#22C55E)" }}
+              animate={{ width:`${((acceptedCount + rejectedCount) / SECTIONS.length) * 100}%` }}
+              transition={{ duration:0.4 }} />
           </div>
         </div>
       </div>
 
-      {/* Section compare cards */}
+      {/* Side-by-side cards */}
       <div className="space-y-5">
-        {SECTIONS.map(({ key, label, emoji }) => (
-          <CompareCard
-            key={key}
-            section={key}
-            label={label}
-            emoji={emoji}
-            original={form[key]}
-            improved={improved[key]}
-            decision={decisions[key]?.status || "pending"}
-            onAccept={() => setDecision(key, "accepted")}
-            onReject={() => setDecision(key, "rejected")}
-            onEdit={() => {}}
-            onRegenerate={() => regenerate(key)}
-            editValue={improved[key]}
-            onEditChange={v => updateEdit(key, v)}
-            isGenerating={!!generating[key]}
-          />
-        ))}
+        {SECTIONS.map(({ key, label, emoji }) => {
+          const dec = decisions[key];
+          const isGen = !!generating[key];
+          const hasAI = !!improvedResume[key];
+          const statusColors = {
+            accepted: { bg:"rgba(34,197,94,0.06)", bd:"rgba(34,197,94,0.30)" },
+            rejected: { bg:"rgba(239,68,68,0.06)",  bd:"rgba(239,68,68,0.28)"  },
+            pending:  { bg:"var(--bg-card)",          bd:"var(--border-default)" },
+          }[dec] || { bg:"var(--bg-card)", bd:"var(--border-default)" };
+
+          return (
+            <motion.div key={key}
+              initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }}
+              className="rounded-2xl overflow-hidden"
+              style={{ border:`1px solid ${statusColors.bd}`, background:statusColors.bg }}>
+
+              {/* Card header */}
+              <div className="flex items-center justify-between px-4 py-3"
+                style={{ borderBottom:"1px solid var(--border-subtle)", background:"var(--bg-surface)" }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{emoji}</span>
+                  <span className="text-sm font-bold" style={{ color:"var(--text-primary)" }}>{label}</span>
+                  {dec === "accepted" && <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background:"rgba(34,197,94,0.15)", color:"var(--color-green-text)" }}>✓ Accepted</span>}
+                  {dec === "rejected" && <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background:"rgba(239,68,68,0.12)", color:"var(--color-red-text)" }}>✗ Rejected</span>}
+                  {dec === "pending"  && hasAI && <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background:"rgba(245,158,11,0.12)", color:"var(--color-yellow-text)" }}>⏳ Pending</span>}
+                </div>
+                <button onClick={() => rewriteSection(key)} disabled={isGen}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white disabled:opacity-50"
+                  style={{ background:"linear-gradient(135deg,#7C3AED,#6D28D9)" }}>
+                  {isGen
+                    ? <><Loader2 size={10} className="animate-spin"/>Rewriting…</>
+                    : <><RefreshCw size={10}/>{hasAI ? "Regenerate" : "Generate"}</>
+                  }
+                </button>
+              </div>
+
+              {/* Two columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x"
+                style={{ borderColor:"var(--border-subtle)" }}>
+
+                {/* LEFT — Original (from uploaded resume, read-only) */}
+                <div className="p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-2"
+                    style={{ color:"var(--color-red-text)" }}>⬛ Your Current Resume</p>
+                  <p className="text-xs leading-relaxed whitespace-pre-wrap"
+                    style={{ color:"var(--text-muted)", fontStyle: originalResume[key] ? "normal" : "italic" }}>
+                    {originalResume[key] || `No ${label.toLowerCase()} found in uploaded resume. Add content in the Editor tab.`}
+                  </p>
+                </div>
+
+                {/* RIGHT — AI Improved (editable) */}
+                <div className="p-4" style={{ background:"rgba(34,197,94,0.025)" }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-2"
+                    style={{ color:"var(--color-green-text)" }}>✨ AI Improved Version</p>
+
+                  {isGen && (
+                    <div className="flex items-center gap-2 py-6 justify-center">
+                      <Loader2 size={16} className="animate-spin" style={{ color:"#7C3AED" }}/>
+                      <span className="text-xs" style={{ color:"var(--text-muted)" }}>Groq AI is writing…</span>
+                    </div>
+                  )}
+
+                  {!isGen && !hasAI && (
+                    <p className="text-xs italic py-4 text-center" style={{ color:"var(--text-faint)" }}>
+                      Click "Generate" to get AI suggestions →
+                    </p>
+                  )}
+
+                  <AnimatePresence mode="wait">
+                    {!isGen && hasAI && (
+                      <motion.div key={improvedResume[key]}
+                        initial={{ opacity:0, y:6, backgroundColor:"rgba(34,197,94,0.12)" }}
+                        animate={{ opacity:1, y:0, backgroundColor:"rgba(34,197,94,0.00)" }}
+                        transition={{ duration:0.35 }}>
+                        <textarea
+                          rows={5}
+                          value={editedResume[key] || ""}
+                          onChange={e => setEditedResume(v => ({ ...v, [key]: e.target.value }))}
+                          className="input-dark text-xs resize-none w-full mb-3"
+                          style={{ lineHeight:"1.7", borderRadius:"10px" }} />
+                        <div className="flex gap-2">
+                          {dec !== "accepted" && (
+                            <button onClick={() => accept(key)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
+                              style={{ background:"linear-gradient(135deg,#22C55E,#16A34A)" }}>
+                              <Check size={10}/> Accept
+                            </button>
+                          )}
+                          {dec !== "rejected" && (
+                            <button onClick={() => reject(key)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                              style={{ background:"rgba(239,68,68,0.10)", border:"1px solid rgba(239,68,68,0.22)", color:"var(--color-red-text)" }}>
+                              ✗ Reject
+                            </button>
+                          )}
+                          {(dec === "accepted" || dec === "rejected") && (
+                            <button onClick={() => undo(key)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                              style={{ background:"var(--bg-surface)", border:"1px solid var(--border-default)", color:"var(--text-faint)" }}>
+                              ↩ Undo
+                            </button>
+                          )}
+                          <button onClick={() => setEditedResume(v => ({ ...v, [key]: originalResume[key] || "" }))}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold ml-auto"
+                            style={{ background:"rgba(99,102,241,0.08)", color:"#A78BFA" }}>
+                            Restore Original
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* Generate button */}
+      {/* Generate final resume button */}
       <div className="mt-8 pt-6" style={{ borderTop:"1px solid var(--border-default)" }}>
-        {pendingCount > 0 && (
+        {pendingCount > 0 && Object.values(improvedResume).some(Boolean) && (
           <p className="text-xs text-center mb-3" style={{ color:"var(--color-yellow-text)" }}>
             ⚠ {pendingCount} section{pendingCount > 1 ? "s" : ""} still pending review
           </p>
         )}
-        <motion.button
-          whileHover={{ scale:1.01 }} whileTap={{ scale:0.98 }}
+        <motion.button whileHover={{ scale:1.01 }} whileTap={{ scale:0.98 }}
           onClick={handleGenerate}
           disabled={finalizing || acceptedCount === 0}
           className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-sm font-black text-white disabled:opacity-55"
-          style={{
-            background:  "linear-gradient(135deg,#7C3AED,#6D28D9)",
-            boxShadow:   "0 8px 28px rgba(124,58,237,0.42)",
-          }}>
+          style={{ background:"linear-gradient(135deg,#7C3AED,#6D28D9)", boxShadow:"0 8px 28px rgba(124,58,237,0.42)" }}>
           {finalizing
-            ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Generating Improved Resume…</>
-            : <>🚀 Generate Improved Resume ({acceptedCount} changes accepted)</>
+            ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Applying changes…</>
+            : <>🚀 Generate Improved Resume ({acceptedCount} change{acceptedCount !== 1 ? "s" : ""} accepted)</>
           }
         </motion.button>
         <p className="text-[10px] text-center mt-2" style={{ color:"var(--text-faint)" }}>
-          Only accepted improvements will be applied to your final resume
+          Only accepted improvements will be applied — originals are never overwritten until you click above
         </p>
       </div>
     </div>
@@ -1722,28 +1968,42 @@ export default function AIResumeBuilder() {
   /* Build initial form: merge backend data over the blank defaults */
   const buildInitialForm = () => {
     if (!incoming) return INITIAL_FORM;
+
+    // Helper: read from sections dict first, then top-level key, then default
+    const sec = incoming.sections || {};
+    const get = (key, fallback = "") =>
+      sec[key] || incoming[key] || fallback;
+
     return {
       ...INITIAL_FORM,
-      /* Personal — use whatever the backend parsed/stored */
-      name:           incoming.candidate_name  || incoming.name  || INITIAL_FORM.name,
+      /* ── Personal info ── */
+      name:           incoming.candidate_name  || incoming.name     || INITIAL_FORM.name,
       title:          incoming.role            || INITIAL_FORM.title,
       email:          incoming.email           || INITIAL_FORM.email,
       phone:          incoming.phone           || INITIAL_FORM.phone,
       location:       incoming.location        || INITIAL_FORM.location,
       github:         incoming.github          || INITIAL_FORM.github,
       linkedin:       incoming.linkedin        || INITIAL_FORM.linkedin,
-      /* Content sections from parsed resume */
-      summary:        incoming.summary         || INITIAL_FORM.summary,
-      skills:         Array.isArray(incoming.skills)
-                        ? incoming.skills.join(", ")
-                        : (incoming.skills || INITIAL_FORM.skills),
-      experience:     incoming.experience      || INITIAL_FORM.experience,
-      projects:       incoming.projects        || INITIAL_FORM.projects,
-      education:      incoming.education       || INITIAL_FORM.education,
-      certifications: incoming.certifications  || INITIAL_FORM.certifications,
-      achievements:   incoming.achievements    || INITIAL_FORM.achievements,
+      /* ── Resume content — prefer sections dict, then top-level key ── */
+      summary:        get("summary"),
+      experience:     get("experience"),
+      projects:       get("projects"),
+      education:      get("education"),
+      certifications: get("certifications"),
+      achievements:   get("achievements"),
+      /* skills can be an array (from /analyze) or a string (from sections) */
+      skills:
+        sec["skills"]
+          ? sec["skills"]
+          : Array.isArray(incoming.skills)
+            ? incoming.skills.join(", ")
+            : (incoming.skills || INITIAL_FORM.skills),
     };
   };
+
+  /* ── originalSections — the UPLOADED resume sections, NEVER overwritten ── */
+  /* Regenerate always uses these, not form[field], so Accept→Regenerate works correctly */
+  const [originalSections, setOriginalSections] = useState({});
 
   /* ── Tab: auto-open "improve" when coming from Apply All ── */
   const [activeTab,   setActiveTab]   = useState(applyAll ? "improve" : "templates");
@@ -1765,7 +2025,81 @@ export default function AIResumeBuilder() {
   const toggleFav = (id) =>
     setFavourites(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
 
-  /* ── Derive company / ATS info from router state ── */
+  /* ── On mount: populate originalSections + form from uploaded resume ── */
+  useEffect(() => {
+    // If we arrived from Apply All, incoming already has sections populated.
+    // Use them directly — no need for a second network request.
+    if (incoming?.sections && Object.values(incoming.sections).some(Boolean)) {
+      const s = incoming.sections;
+      const skillsFromArr = Array.isArray(incoming.skills)
+        ? incoming.skills.join(", ")
+        : "";
+
+      const populated = {
+        summary:        s.summary        || "",
+        experience:     s.experience     || "",
+        projects:       s.projects       || "",
+        skills:         s.skills         || skillsFromArr || "",
+        achievements:   s.achievements   || "",
+        education:      s.education      || "",
+        certifications: s.certifications || "",
+      };
+
+      // Store originals — never mutated after this point
+      setOriginalSections(populated);
+
+      // Populate form fields — only override if still at defaults
+      setFormData(prev => ({
+        ...prev,
+        summary:        prev.summary        || populated.summary,
+        experience:     prev.experience     || populated.experience,
+        projects:       prev.projects       || populated.projects,
+        skills:         (prev.skills === "Python, React, SQL, Git, Node.js, Docker")
+                          ? (populated.skills || prev.skills)
+                          : prev.skills,
+        education:      prev.education      || populated.education,
+        certifications: prev.certifications || populated.certifications,
+        achievements:   prev.achievements   || populated.achievements,
+      }));
+      return;   // skip the network fetch — data already in hand
+    }
+
+    // No incoming data — fetch from the backend session
+    fetch(`${API}/ai/resume/current`, { cache: "no-store" })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.available || !data.sections) return;
+        const s = data.sections;
+
+        const populated = {
+          summary:        s.summary        || "",
+          experience:     s.experience     || "",
+          projects:       s.projects       || "",
+          skills:         s.skills         || (Array.isArray(data.skills) ? data.skills.join(", ") : "") || "",
+          achievements:   s.achievements   || "",
+          education:      s.education      || "",
+          certifications: s.certifications || "",
+        };
+
+        setOriginalSections(prev => ({ ...prev, ...populated }));
+
+        setFormData(prev => ({
+          ...prev,
+          summary:        prev.summary        || populated.summary,
+          experience:     prev.experience     || populated.experience,
+          projects:       prev.projects       || populated.projects,
+          skills:         (prev.skills === "Python, React, SQL, Git, Node.js, Docker")
+                            ? (populated.skills || prev.skills)
+                            : prev.skills,
+          education:      prev.education      || populated.education,
+          certifications: prev.certifications || populated.certifications,
+          achievements:   prev.achievements   || populated.achievements,
+        }));
+      })
+      .catch(() => {/* backend offline — form stays as-is */});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Derive company / ATS info from router state */
   const atsScore     = incoming?.ats?.overall_score   ?? 0;
   const missingSkills= incoming?.missing_skills       ?? [];
   const matchedSkills= incoming?.matched_skills       ?? [];
@@ -1886,7 +2220,12 @@ export default function AIResumeBuilder() {
                 <EditorTab form={form} setField={setField} saved={saved} />
               )}
               {activeTab === "rewrite" && (
-                <RewriteTab form={form} setField={setField} />
+                <RewriteTab
+                  form={form}
+                  setField={setField}
+                  originalSections={originalSections}
+                  setOriginalSections={setOriginalSections}
+                />
               )}
               {activeTab === "optimizer" && (
                 <OptimizerTab form={form} />

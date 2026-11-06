@@ -18,7 +18,19 @@ function ResumeUpload({ setResumeData, setAnalysisComplete }) {
       const response = await fetch("http://127.0.0.1:5000/upload", { method: "POST", body: formData });
       const data = await response.json();
       console.log("Backend Response:", data);
-      setResumeData({ uploaded: true, filename: data.filename });
+
+      // Store the full upload payload including parsed sections
+      // so the Resume page and AI Suggestions have access to actual content
+      setResumeData({
+        uploaded:  true,
+        filename:  data.filename,
+        resume_id: data.resume_id,
+        // Parsed sections — used as source of truth for AI suggestions
+        sections:  data.sections  || {},
+        skills:    data.skills    || [],
+        raw_text:  data.raw_text  || "",
+      });
+
       setAnalysisComplete(false);
       setMessage(data.message || "Resume uploaded successfully");
       setIsSuccess(true);

@@ -1,26 +1,40 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 
-import Login           from "./pages/Login";
-import Dashboard       from "./pages/Dashboard";
-import Resume          from "./pages/Resume";
-import Companies       from "./pages/Companies";
-import Analytics       from "./pages/Analytics";
-import Learning        from "./pages/Learning";
-import MockInterview   from "./pages/MockInterview";
-import Analysis        from "./pages/Analysis";
-import Settings        from "./pages/Settings";
-import Profile         from "./pages/Profile";
-import AIResumeBuilder from "./pages/AIResumeBuilder";
-import AICoverLetter   from "./pages/AICoverLetter";
-import AICoach         from "./pages/AICoach";
+import Login              from "./pages/Login";
+import Dashboard          from "./pages/Dashboard";
+import Resume             from "./pages/Resume";
+import Companies          from "./pages/Companies";
+import Analytics          from "./pages/Analytics";
+import Learning           from "./pages/Learning";
+import MockInterview      from "./pages/MockInterview";
+import Analysis           from "./pages/Analysis";
+import Settings           from "./pages/Settings";
+import Profile            from "./pages/Profile";
+import AIResumeBuilder    from "./pages/AIResumeBuilder";
+import AICoverLetter      from "./pages/AICoverLetter";
+import AICoach            from "./pages/AICoach";
 /* These pages still exist and are routable but removed from sidebar */
-import AIRewriter      from "./pages/AIRewriter";
-import AISuggestions   from "./pages/AISuggestions";
-import AIOptimize      from "./pages/AIOptimize";
+import AIRewriter         from "./pages/AIRewriter";
+import AISuggestions      from "./pages/AISuggestions";
+import AIOptimize         from "./pages/AIOptimize";
+
+import FloatingAICoach    from "./components/FloatingAICoach";
+
+/* Pages where the floating button should NOT appear */
+const HIDE_FLOATING_ON = ["/", "/ai-coach"];
+
+function FloatingCoachWrapper() {
+  const location = useLocation();
+  if (HIDE_FLOATING_ON.includes(location.pathname)) return null;
+  return <FloatingAICoach />;
+}
 
 function App() {
   return (
     <BrowserRouter>
+      {/* Floating AI Career Coach — visible on every page except Login and /ai-coach */}
+      <FloatingCoachWrapper />
+
       <Routes>
         <Route path="/"                  element={<Login />} />
         <Route path="/dashboard"         element={<Dashboard />} />
@@ -36,7 +50,7 @@ function App() {
         <Route path="/ai-resume-builder" element={<AIResumeBuilder />} />
         <Route path="/ai-cover-letter"   element={<AICoverLetter />} />
         <Route path="/ai-coach"          element={<AICoach />} />
-        {/* Still accessible by direct URL, just removed from sidebar ── */}
+        {/* Still accessible by direct URL ── */}
         <Route path="/ai-rewriter"       element={<AIRewriter />} />
         <Route path="/ai-suggestions"    element={<AISuggestions />} />
         <Route path="/ai-optimize"       element={<AIOptimize />} />

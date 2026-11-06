@@ -56,9 +56,14 @@ def upload_resume():
     resume_text = extract_text_from_pdf(filepath)
     skills      = extract_skills(resume_text)
 
+    # Parse the resume into sections immediately at upload time
+    from routes.ai_routes import _parse_resume_sections
+    sections = _parse_resume_sections(resume_text)
+
     print("\n===== RESUME UPLOADED =====")
     print("Filename:", filename)
     print("Skills Found:", skills)
+    print("Sections parsed:", [k for k, v in sections.items() if v])
 
     # ── Persist to DB ────────────────────────────────────────────────────
     try:
@@ -77,11 +82,17 @@ def upload_resume():
     LATEST_RESUME["skills"]   = skills
     LATEST_RESUME["filename"] = filename
     LATEST_RESUME["db_id"]    = db_id
+    LATEST_RESUME["sections"] = sections   # store parsed sections for reuse
 
     return jsonify({
-        "message":  "Resume uploaded successfully",
-        "filename": filename,
+        "message":   "Resume uploaded successfully",
+        "filename":  filename,
         "resume_id": db_id,
+        # Return parsed sections to the frontend immediately
+        # so AIResumeBuilder can populate originalSections without a second request
+        "sections":  sections,
+        "skills":    skills,
+        "raw_text":  resume_text,
     })
 
 
@@ -243,6 +254,10 @@ def analyze_resume():
         },
         # Learning
         "learning_plan": learning_plan,
+        # ── Parsed resume sections (source of truth for AI Apply/Apply All) ──
+        # These come from the uploaded resume so Apply uses real content, not empty strings
+        "sections":      LATEST_RESUME.get("sections") or {},
+        "raw_text":      LATEST_RESUME.get("text", ""),
         # Legacy flag consumed by frontend
         "uploaded": True,
     })

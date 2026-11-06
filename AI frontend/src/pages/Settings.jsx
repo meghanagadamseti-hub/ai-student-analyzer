@@ -46,20 +46,32 @@ function Settings() {
 
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-7">
           <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>Settings</h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-faint)" }}>Customize your AI Interview Career Coach experience.</p>
+          <p className="text-sm mt-1" style={{ color: "var(--text-faint)" }}>Manage your account, preferences, notifications and security.</p>
         </motion.div>
 
-        <div className="space-y-5 max-w-3xl">
+        <div className="space-y-5">
 
           {/* Profile */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}
             className="theme-card rounded-2xl p-6">
-            <SectionHeader icon={FaUser} color="#7C3AED" title="Profile" subtitle="Your personal information" />
-            <div className="grid md:grid-cols-2 gap-4">
-              <input className="input-dark" placeholder="Full Name"  defaultValue="Meghana"          readOnly />
-              <input className="input-dark" placeholder="Email"      defaultValue="meghana@gmail.com" readOnly />
-              <input className="input-dark" placeholder="University" defaultValue="Vignan University" readOnly />
-              <input className="input-dark" placeholder="Branch"     defaultValue="Computer Science"  readOnly />
+            <SectionHeader icon={FaUser} color="#7C3AED" title="Account Information" subtitle="Your personal information" />
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Full Name</label>
+                <input className="input-dark w-full" placeholder="Full Name"  defaultValue="Meghana"          readOnly />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Email</label>
+                <input className="input-dark w-full" placeholder="Email"      defaultValue="meghana@gmail.com" readOnly />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>University</label>
+                <input className="input-dark w-full" placeholder="University" defaultValue="Vignan University" readOnly />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Department</label>
+                <input className="input-dark w-full" placeholder="Department" defaultValue="Computer Science"  readOnly />
+              </div>
             </div>
           </motion.div>
 
@@ -75,41 +87,58 @@ function Settings() {
             </div>
           </motion.div>
 
-          {/* Appearance — connected to ThemeContext */}
+          {/* Appearance */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}
             className="theme-card rounded-2xl p-6">
             <SectionHeader icon={FaPalette} color="#f472b6" title="Appearance" subtitle="Theme preference" />
-            <select
-              className="select-dark max-w-xs"
-              value={preference}
-              onChange={(e) => setTheme(e.target.value)}
-            >
-              <option value="dark">🌙 Dark Mode</option>
-              <option value="light">☀️ Light Mode</option>
-              <option value="system">💻 System Default</option>
-            </select>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Theme</label>
+                <select
+                  className="select-dark w-full"
+                  value={preference}
+                  onChange={(e) => setTheme(e.target.value)}
+                >
+                  <option value="dark">🌙 Dark Mode</option>
+                  <option value="light">☀️ Light Mode</option>
+                  <option value="system">💻 System Default</option>
+                </select>
+              </div>
+            </div>
           </motion.div>
 
           {/* Career Preferences */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
             className="theme-card rounded-2xl p-6">
             <SectionHeader icon={FaBriefcase} color="#10b981" title="Career Preferences" subtitle="Target role & location" />
-            <div className="grid md:grid-cols-2 gap-4">
-              <select className="select-dark">
-                <option>Software Engineer</option><option>Frontend Developer</option>
-                <option>Backend Developer</option><option>Full Stack Developer</option>
-                <option>Data Analyst</option><option>AI Engineer</option>
-              </select>
-              <select className="select-dark">
-                <option>Product Based</option><option>Service Based</option><option>Startup</option>
-              </select>
-              <select className="select-dark">
-                <option>Bangalore</option><option>Hyderabad</option><option>Pune</option>
-                <option>Chennai</option><option>Remote</option>
-              </select>
-              <select className="select-dark">
-                <option>Fresher</option><option>Internship</option>
-              </select>
+            <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Target Role</label>
+                <select className="select-dark w-full">
+                  <option>Software Engineer</option><option>Frontend Developer</option>
+                  <option>Backend Developer</option><option>Full Stack Developer</option>
+                  <option>Data Analyst</option><option>AI Engineer</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Company Type</label>
+                <select className="select-dark w-full">
+                  <option>Product Based</option><option>Service Based</option><option>Startup</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Preferred Location</label>
+                <select className="select-dark w-full">
+                  <option>Bangalore</option><option>Hyderabad</option><option>Pune</option>
+                  <option>Chennai</option><option>Remote</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Experience</label>
+                <select className="select-dark w-full">
+                  <option>Fresher</option><option>Internship</option>
+                </select>
+              </div>
             </div>
           </motion.div>
 

@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import {
-  LayoutDashboard, FileText, Wand2, BrainCircuit,
+  LayoutDashboard, FileText, Wand2,
   Building2, ScanSearch, Mic, BookOpen, BarChart3,
   User, Settings, Sparkles,
 } from "lucide-react";
@@ -15,7 +15,6 @@ const NAV_ITEMS = [
   { path:"/dashboard",         title:"Dashboard",         color:"#7C3AED", Icon:LayoutDashboard },
   { path:"/resume",            title:"Resume",            color:"#06B6D4", Icon:FileText        },
   { path:"/ai-resume-builder", title:"AI Resume Builder", color:"#EC4899", Icon:Wand2, isNew:true },
-  { path:"/ai-coach",          title:"AI Career Coach",   color:"#06B6D4", Icon:BrainCircuit, isNew:true },
   { path:"/companies",         title:"Companies",         color:"#22C55E", Icon:Building2      },
   { path:"/analysis",          title:"AI Analysis",       color:"#A78BFA", Icon:ScanSearch     },
   { path:"/mock-interview",    title:"Mock Interview",    color:"#F97316", Icon:Mic            },

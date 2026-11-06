@@ -42,12 +42,14 @@ def create_app(config_class=Config):
     from routes.learning_routes  import learning_bp
     from routes.interview_routes import interview_bp
     from routes.coach_routes     import coach_bp
+    from routes.ai_routes        import ai_bp
 
     app.register_blueprint(company_bp)
     app.register_blueprint(resume_bp)
     app.register_blueprint(learning_bp)
     app.register_blueprint(interview_bp)
     app.register_blueprint(coach_bp)
+    app.register_blueprint(ai_bp)
 
     # ── Home route ───────────────────────────────────────────────────────
     @app.route("/")

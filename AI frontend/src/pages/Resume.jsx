@@ -90,7 +90,10 @@ function Resume() {
               {/* Right col: Required Skills stacked above AI Suggestions */}
               <div className="flex flex-col gap-6">
                 <RequiredSkills resumeData={resumeData} />
-                <AIResumeSuggestions resumeData={resumeData} />
+                <AIResumeSuggestions
+                  resumeData={resumeData}
+                  setResumeData={setResumeData}
+                />
               </div>
             </div>
 

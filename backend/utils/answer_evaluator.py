@@ -155,6 +155,7 @@ def _score_keywords(question: str, answer: str):
         return score, strs, imps
 
     hits     = [kw for kw in matched_bank if kw in a]
+    
     coverage = len(hits) / len(matched_bank)
     score    = round(coverage * 30)
 
